@@ -29,7 +29,7 @@ exports.readFile = function (filePath, parse) {
 exports.writeFile = function (filePath, data) {
   filePath = path.resolve(filePath);
   data = typeof data == "object" ? JSON.stringify(data) : data || "{}";
-  fs.writeFileSync(filePath, data, "utf-8");
+  fs.writeFileSync(`${filePath}.json`, data, "utf-8");
 };
 
 exports.appendFile = function (filePath, data) {

@@ -1,27 +1,15 @@
 {
-  "data": "./csMigrationData",
+  "data": "./sitecoreMigrationData",
   "backup": "./backupMigrationData",
   "xml_filename": "",
+  "sitecore_folder": "",
   "json_file": "",
   "json_filename": "data.json",
   "table_prefix": "wp_",
   "entryfolder": "entries",
   "modules": {
-    "locales": {
-      "dirName": "locales",
-      "fileName": "locales.json"
-    },
-    "webhooks": {
-      "dirName": "webhooks",
-      "fileName": "webhooks.json"
-    },
-    "environments": {
-      "dirName": "environments",
-      "fileName": "environments.json"
-    },
     "contentTypes": {
       "dirName": "content_types",
-      "fileName": "contenttype.json",
       "masterfile": "contenttypes.json",
       "validKeys": [
         "title",
@@ -85,12 +73,23 @@
     },
     "article": {
       "dirName": "article",
-      "fileName": "en-us.json",
+      "fileName": "data.json",
       "masterfile": "article.json"
+    },
+    "convert": {
+      "dirName": "convert",
+      "fileName": "data.json",
+      "masterfile": "convert.json"
     }
   },
   "contenttypes": "content_types",
   "contentmodules": {
+    "article": {
+      "fileName": "article.json"
+    },
+    "convert": {
+      "fileName": "convert.json"
+    },
     "authors": {
       "fileName": "authors.json"
     },
@@ -116,7 +115,10 @@
       "masterfile": "sharepoint.json"
     }
   },
-  "base_locale": { "name": "English US", "code": "en-us" },
+  "base_locale": {
+    "name": "English US",
+    "code": "en-us"
+  },
   "mysql": {
     "host": "",
     "user": "",
