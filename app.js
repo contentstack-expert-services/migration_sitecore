@@ -109,7 +109,7 @@ module.exports = XMLMigration = async () => {
 
   inquirer.prompt(question).then(async (answer) => {
     try {
-      global.config.sitecore_folder = "/Users/umesh.more/Documents/Data fil"
+      global.config.sitecore_folder = "/Users/umesh.more/Downloads/package 45/items/master/sitecore/templates"
       migFunction()
     }
     catch (error) {

@@ -356,20 +356,70 @@ function singleContentTypeCreate({ templatePaths }) {
   return true;
 }
 
+
+const removeLastSlash = (str) => {
+  const parts = str?.split('/');
+  parts?.pop();
+  return parts?.join('/');
+}
+
 function ExtractContentTypes() {
   const folder = read(global.config.sitecore_folder);
-  const templatePaths = [];
+  const templateWithOutStandard = [];
   for (let i = 0; i < folder?.length; i++) {
     if (folder?.[i]?.includes("/data.json") | folder?.[i]?.includes("/data.json.json")) {
       if (folder?.[i]?.includes("__Standard Values")) {
         const path = `${global.config.sitecore_folder}/${folder?.[i]?.split("__Standard Values")?.[0]}`
-        singleContentTypeCreate({ templatePaths: path })
-        console.log("step 5")
-        templatePaths.push(path);
+        templateWithOutStandard.push(path);
+      } else {
+        const isDataNormal = folder?.[i]?.includes("Data");
+        const isData = folder?.[i]?.includes("/Data");
+        const isSectionNormal = folder?.[i]?.includes("Section");
+        const isSection = folder?.[i]?.includes("/Section");
+        const isTranslationNormal = folder?.[i]?.includes("Translation");
+        const isTranslation = folder?.[i]?.includes("/Translation");
+        if (isData || isSection || isTranslation) {
+          let path = ""
+          if (isData) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Data")?.[0]}`
+          }
+          if (isSection) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Section")?.[0]}`
+          }
+          if (isTranslation) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Translation")?.[0]}`
+          }
+          templateWithOutStandard.push(path);
+        } else if (isDataNormal || isTranslationNormal || isSectionNormal) {
+          let path = ""
+          if (isDataNormal) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Data")?.[0]}`
+          }
+          if (isSectionNormal) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Section")?.[0]}`
+          }
+          if (isTranslationNormal) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Translation")?.[0]}`
+          }
+          if (read(path)?.length) {
+            templateWithOutStandard.push(`${path}/`);
+          } else {
+            path = removeLastSlash(path)?.trim()
+            if (read(path)?.length) {
+              templateWithOutStandard.push(`${path}/`);
+            }
+          }
+        }
       }
     }
   }
-  if (!templatePaths?.length) {
+  if (templateWithOutStandard?.length) {
+    const unique = [...new Set(templateWithOutStandard)]
+    console.log("🚀 ~ file: contenttypes.js:419 ~ ExtractContentTypes ~ unique:", unique?.length)
+    unique?.forEach((item) => {
+      singleContentTypeCreate({ templatePaths: item })
+    })
+  } else {
     throw { message: "Templates Not Found." }
   }
 }
