@@ -19,6 +19,7 @@ var modulesList = [
   // "assets",
   // "configuration",
   "contenttypes",
+  // "reference",
   // "entries"
 ]; //to create entries
 // var contentList = ["convert"]; // to create content type for the entries
