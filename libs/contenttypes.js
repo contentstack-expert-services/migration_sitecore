@@ -8,6 +8,7 @@ const contentConfig = config.modules.contentTypes;
 const xml_folder = read(global.config.sitecore_folder);
 contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
 const extraField = "title";
+const AddTitleUrl = true;
 
 
 if (!fs.existsSync(contentFolderPath)) {
@@ -165,12 +166,14 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
         uid,
         "field_metadata": {
           description,
-          default_value,
         },
         "mandatory": false,
         "unique": false
       };
-      if (advanced) {
+      if (default_value) {
+        data.field_metadata.default_value = default_value
+      }
+      if (advanced && default_value) {
         data.field_metadata.default_key = default_value;
       }
       return data;
@@ -245,17 +248,39 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
       }
     }
 
-    case "": {
-
-    }
+    // case "Treelist": {
+    //   const data = {
+    //     id,
+    //     "data_type": "text",
+    //     "display_name": name,
+    //     "display_type": "dropdown",
+    //     "enum": {
+    //       "advanced": advanced,
+    //       choices
+    //     },
+    //     "multiple": false,
+    //     uid,
+    //     "field_metadata": {
+    //       description,
+    //     },
+    //     "mandatory": false,
+    //     "unique": false
+    //   };
+    //   if (default_value) {
+    //     data.field_metadata.default_value = default_value
+    //   }
+    //   return data;
+    // }
   }
 }
 
-const contentTypeMapper = ({ components, standardValues }) => {
+const contentTypeMapper = ({ components, standardValues, content_type }) => {
   const source = helper.readFile(
     path.join(process.cwd(), "/sitecoreMigrationData/MapperData/configuration.json")
   );
   const schema = [];
+  let isTitle = false;
+  let isUrl = false;
   if (components?.length) {
     for (let i = 0; i < components?.length; i++) {
       const field = components?.[i];
@@ -271,15 +296,46 @@ const contentTypeMapper = ({ components, standardValues }) => {
       let sourceType = [];
       let advanced = false;
       let name = field?.name;
+      if (field?.key === "title") {
+        isTitle = true;
+      }
+      if (field?.key === "url") {
+        isUrl = true;
+      }
       field?.fields?.forEach((item) => {
         if (item?.key === "type") {
           compType = item;
         }
         if (item?.key === "source") {
           if (source) {
-            sourceType = source[item?.content]
-            if (sourceType?.[0]?.key !== undefined) {
-              advanced = true;
+            if (item?.content?.includes("datasource=")) {
+              const gUid = item?.content?.split("}")?.[0]?.replace("datasource={", "")
+              if (gUid) {
+                const dataSourcePaths = read("/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common")
+                let isDataSourcePresent = dataSourcePaths?.find((sur) => sur?.includes(`{${gUid}}`));
+                isDataSourcePresent = isDataSourcePresent?.split(`{${gUid}}`)?.[0]
+                if (isDataSourcePresent) {
+                  const optionsPath = read(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}`)
+                  const refName = [];
+                  optionsPath?.forEach((newPath) => {
+                    if (newPath?.includes("data.json.json") | newPath?.includes("data.json")) {
+                      const data = helper.readFile(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}/${newPath}`)
+                      if (data?.item?.$?.template) {
+                        refName.push(data?.item?.$?.template)
+                      }
+                    }
+                  })
+                  if (refName?.length) {
+                    const unique = [...new Set(refName)]
+                    contentTypeKeyMapper({ template: { id: content_type?.uid }, contentType: { uid: unique }, contentTypeKey: "treeListRef" })
+                  }
+                }
+              }
+            } else {
+              sourceType = source[item?.content]
+              if (sourceType?.[0]?.key !== undefined) {
+                advanced = true;
+              }
             }
           }
         }
@@ -300,6 +356,32 @@ const contentTypeMapper = ({ components, standardValues }) => {
       }));
     }
   }
+  if (AddTitleUrl && isUrl === false) {
+    schema.unshift({
+      "display_name": "URL",
+      "uid": "url",
+      "data_type": "text",
+      "mandatory": true,
+      "field_metadata": {
+        "_default": true
+      },
+      "multiple": false,
+      "unique": false
+    })
+  }
+  if (AddTitleUrl && isTitle === false) {
+    schema.unshift({
+      "display_name": "Title",
+      "uid": "title",
+      "data_type": "text",
+      "mandatory": true,
+      "unique": true,
+      "field_metadata": {
+        "_default": true
+      },
+      "multiple": false
+    })
+  }
   return schema;
 }
 
@@ -314,7 +396,7 @@ const contentTypeMaker = ({ template, basePath }) => {
       contentTypeKeyMapper({ template, contentType: { uid: { ...item?.$, content: item?.content } }, contentTypeKey: "base" })
     }
   })
-  content_type.schema = contentTypeMapper({ components: template?.components, standardValues: template?.standardValues })
+  content_type.schema = contentTypeMapper({ components: template?.components, standardValues: template?.standardValues, content_type })
   return content_type;
 }
 
@@ -328,7 +410,11 @@ function singleContentTypeCreate({ templatePaths }) {
   const templatesMetaDataPath = [];
   for (let i = 0; i < newPath?.length; i++) {
     if (newPath?.[i]?.includes("data.json")) {
-      if (newPath?.[i]?.includes("Data") || newPath?.[i]?.includes("Section") || newPath?.[i]?.includes("Translation")) {
+      if (newPath?.[i]?.includes("Data") ||
+        newPath?.[i]?.includes("Section") ||
+        newPath?.[i]?.includes("Translation") ||
+        newPath?.[i]?.includes("Info") ||
+        newPath?.[i]?.includes("References")) {
         templatesComponentsPath.push(newPath?.[i])
       } else if (newPath?.[i]?.includes("__Standard Values")) {
         templatesStandaedValuePath.push(newPath?.[i])

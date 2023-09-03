@@ -39,7 +39,7 @@ function ExtractRef() {
                 },
                 "uid": "reference",
                 "mandatory": false,
-                "multiple": uids?.length > 1,
+                "multiple": false,
                 "non_localizable": false,
                 "unique": false
               };
