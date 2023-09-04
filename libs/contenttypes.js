@@ -152,6 +152,8 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
         "unique": false
       }
     }
+
+    case "Droplink":
     case 'Droplist': {
       const data = {
         id,
@@ -248,29 +250,21 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
       }
     }
 
-    // case "Treelist": {
-    //   const data = {
-    //     id,
-    //     "data_type": "text",
-    //     "display_name": name,
-    //     "display_type": "dropdown",
-    //     "enum": {
-    //       "advanced": advanced,
-    //       choices
-    //     },
-    //     "multiple": false,
-    //     uid,
-    //     "field_metadata": {
-    //       description,
-    //     },
-    //     "mandatory": false,
-    //     "unique": false
-    //   };
-    //   if (default_value) {
-    //     data.field_metadata.default_value = default_value
-    //   }
-    //   return data;
-    // }
+    case "Integer":
+    case "Number": {
+      return {
+        "data_type": "number",
+        "display_name": name,
+        uid,
+        "field_metadata": {
+          description,
+          default_value
+        },
+        "multiple": false,
+        "mandatory": false,
+        "unique": false
+      }
+    }
   }
 }
 
@@ -327,7 +321,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
                   })
                   if (refName?.length) {
                     const unique = [...new Set(refName)]
-                    contentTypeKeyMapper({ template: { id: content_type?.uid }, contentType: { uid: unique }, contentTypeKey: "treeListRef" })
+                    contentTypeKeyMapper({ template: { id: content_type?.uid }, contentType: { uid: { name, uid: field?.key, unique } }, contentTypeKey: "treeListRef" })
                   }
                 }
               }
@@ -345,15 +339,17 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
           }
         }
       })
-      schema.push(ContentTypeSchema({
-        name,
-        uid: uidCorrector({ uid: field?.key }),
-        type: compType?.content,
-        default_value: compType?.standardValues?.content,
-        id: field?.id,
-        choices: sourceType,
-        advanced,
-      }));
+      if (compType?.content !== "Treelist" && compType?.content !== "Droptree") {
+        schema.push(ContentTypeSchema({
+          name,
+          uid: uidCorrector({ uid: field?.key }),
+          type: compType?.content,
+          default_value: compType?.standardValues?.content,
+          id: field?.id,
+          choices: sourceType,
+          advanced,
+        }));
+      }
     }
   }
   if (AddTitleUrl && isUrl === false) {

@@ -8,15 +8,43 @@ const contentConfig = config.modules.contentTypes;
 const xml_folder = read(global.config.sitecore_folder);
 contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
 
+const uidCorrector = ({ uid }) => {
+  return _.replace(uid, new RegExp(" ", "g"), '_').toLowerCase()
+}
 
 function ExtractRef() {
-  const basePages = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/base.json"))
-  const contentTypeKeys = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/contentTypeKey.json"))
+  const basePages = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/base.json"));
+  const contentTypeKeys = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/contentTypeKey.json"));
+  const treeListRef = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/treeListRef.json"));
+  const globalFieldUids = [];
   const contentTypesPaths = read(contentFolderPath);
-  if (contentTypesPaths?.length && basePages && contentTypeKeys) {
+  if (contentTypesPaths?.length && basePages && contentTypeKeys && treeListRef) {
     contentTypesPaths?.forEach((item) => {
       const contentType = helper.readFile(`${contentFolderPath}/${item}`)
-      if (contentType?.id) {
+      if (contentType?.id || contentType?.uid) {
+        const refTree = treeListRef[contentType?.uid]
+        if (refTree?.unique?.length) {
+          const contentTypesPathsMaped = contentTypesPaths?.map((item) => item?.replace(".json", ""))
+          refTree.unique = refTree?.unique?.map((item) => uidCorrector({ uid: item }))
+          const uids = contentTypesPathsMaped?.filter((item) => refTree?.unique?.includes(item));
+          if (uids?.length) {
+            const schemaObject = {
+              data_type: "reference",
+              display_name: refTree?.name,
+              reference_to: uids,
+              field_metadata: {
+                ref_multiple: true,
+                ref_multiple_content_types: true
+              },
+              uid: refTree?.uid,
+              mandatory: false,
+              multiple: false,
+              non_localizable: false,
+              unique: false
+            };
+            contentType.schema.push(schemaObject)
+          }
+        }
         const itHasBasePresent = basePages[contentType?.id];
         if (itHasBasePresent?.content) {
           const references = itHasBasePresent?.content?.split("|");
@@ -29,36 +57,71 @@ function ExtractRef() {
               }
             })
             if (uids?.length) {
-              const schemaObject = {
-                "data_type": "reference",
-                "display_name": "Reference",
-                "reference_to": uids,
-                "field_metadata": {
-                  "ref_multiple": true,
-                  "ref_multiple_content_types": true
-                },
-                "uid": "reference",
-                "mandatory": false,
-                "multiple": false,
-                "non_localizable": false,
-                "unique": false
-              };
-              contentType.schema.push(schemaObject)
-              helper.writeFile(
-                path.join(
-                  process.cwd(),
-                  "sitecoreMigrationData/content_types",
-                  contentType?.uid
-                ),
-                JSON.stringify(contentType, null, 4),
-                (err) => {
-                  if (err) throw err;
-                }
-              );
+              uids?.forEach((key) => {
+                globalFieldUids?.push(key);
+                const schemaObject = {
+                  "data_type": "global_field",
+                  "display_name": key,
+                  "reference_to": key,
+                  "field_metadata": {
+                    "ref_multiple": true,
+                    "ref_multiple_content_types": true
+                  },
+                  "uid": key,
+                  "mandatory": false,
+                  "multiple": false,
+                  "non_localizable": false,
+                  "unique": false
+                };
+                contentType.schema.push(schemaObject)
+              })
             }
           }
         }
       }
+      helper.writeFile(
+        path.join(
+          process.cwd(),
+          "sitecoreMigrationData/content_types",
+          contentType?.uid
+        ),
+        JSON.stringify(contentType, null, 4),
+        (err) => {
+          if (err) throw err;
+        }
+      );
+    })
+  }
+  if (globalFieldUids?.length) {
+    const unique = [...new Set(globalFieldUids)]
+    const allGlobalFiels = [];
+    const data = helper.readFile(path.join(
+      process.cwd(),
+      "sitecoreMigrationData/global_fields",
+      "globalfields"
+    ))
+    if (data?.length) {
+      allGlobalFiels.push(...data)
+    }
+    unique?.forEach((item) => {
+      const content = helper.readFile(`${contentFolderPath}/${item}.json`)
+      allGlobalFiels?.push(content);
+    })
+    if (allGlobalFiels?.length) {
+      helper.writeFile(
+        path.join(
+          process.cwd(),
+          "sitecoreMigrationData/global_fields",
+          "globalfields"
+        ),
+        JSON.stringify(allGlobalFiels, null, 4),
+        (err) => {
+          if (err) throw err;
+        }
+      );
+    }
+    unique?.forEach((item) => {
+      const message = fs.unlinkSync(`${contentFolderPath}/${item}.json`)
     })
   }
 }
