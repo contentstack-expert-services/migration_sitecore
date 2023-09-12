@@ -12,7 +12,46 @@ const uidCorrector = ({ uid }) => {
   return _.replace(uid, new RegExp(" ", "g"), '_').toLowerCase()
 }
 
+const emptyGlobalFiled = () => {
+  helper.writeFile(
+    path.join(
+      process.cwd(),
+      "sitecoreMigrationData/global_fields",
+      "globalfields"
+    ),
+    JSON.stringify([], null, 4),
+    (err) => {
+      if (err) throw err;
+    }
+  );
+}
+
+const writeSchemaJson = () => {
+  const contentTypesPaths = read(contentFolderPath);
+  if (contentTypesPaths?.length) {
+    const schema = [];
+    contentTypesPaths?.forEach((item) => {
+      const contentType = helper.readFile(`${contentFolderPath}/${item}`)
+      schema.push(contentType);
+    })
+    if (schema?.length) {
+      helper.writeFile(
+        path.join(
+          process.cwd(),
+          "sitecoreMigrationData/content_types",
+          "schema"
+        ),
+        JSON.stringify(schema, null, 4),
+        (err) => {
+          if (err) throw err;
+        }
+      );
+    }
+  }
+}
+
 function ExtractRef() {
+  emptyGlobalFiled()
   const basePages = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/base.json"));
   const contentTypeKeys = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/contentTypeKey.json"));
   const treeListRef = helper.readFile(path.join(process.cwd(), "/sitecoreMigrationData/MapperData/treeListRef.json"));

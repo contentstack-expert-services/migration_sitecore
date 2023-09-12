@@ -136,24 +136,24 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
     }
     case 'Rich Text': {
       return {
-        id,
-        "data_type": "text",
+        "data_type": "json",
         "display_name": name,
         "uid": uid,
         "field_metadata": {
-          "allow_rich_text": true,
-          "description": description,
-          "multiline": false,
+          "allow_json_rte": true,
           "rich_text_type": "advanced",
-          "version": 3
+          description,
+          default_value
         },
+        "reference_to": [],
+        "non_localizable": false,
         "multiple": false,
         "mandatory": false,
         "unique": false
       }
     }
 
-    case "Droplink":
+    // case "":
     case 'Droplist': {
       const data = {
         id,
@@ -346,7 +346,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
           type: compType?.content,
           default_value: compType?.standardValues?.content,
           id: field?.id,
-          choices: sourceType,
+          choices: sourceType?.slice(0, 98),
           advanced,
         }));
       }
@@ -410,7 +410,9 @@ function singleContentTypeCreate({ templatePaths }) {
         newPath?.[i]?.includes("Section") ||
         newPath?.[i]?.includes("Translation") ||
         newPath?.[i]?.includes("Info") ||
-        newPath?.[i]?.includes("References")) {
+        newPath?.[i]?.includes("References") ||
+        newPath?.[i]?.includes("Columns")
+      ) {
         templatesComponentsPath.push(newPath?.[i])
       } else if (newPath?.[i]?.includes("__Standard Values")) {
         templatesStandaedValuePath.push(newPath?.[i])

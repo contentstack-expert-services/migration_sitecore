@@ -10,12 +10,114 @@ const read = require("fs-readdir-recursive");
 const helper = require("../utils/helper");
 const json_file = []
 const xml_folder = read(global.config.sitecore_folder)
+const { uid } = require('uid');
 const assetsSave = "sitecoreMigrationData/assets"
+const exclude = ["1", "en", "2"]
 
 
+const idCorrector = ({ id }) => {
+  const newId = id?.replace(/[-{}]/g, (match) => match === '-' ? '' : '')
+  if (newId) {
+    return newId?.toLowerCase()
+  } else {
+    return id?.toLowerCase()
+  }
+}
 
+const createFolder = () => {
+  if (xml_folder?.length) {
+    const allFolderJSON = [];
+    xml_folder?.forEach((item) => {
+      if (item?.includes("media library")) {
+        if (item?.includes("/data.json") | item?.includes("/data.json.json")) {
+          const folderRaw = item?.split("media library")?.[1]
+          if (folderRaw) {
+            const folderSplite = folderRaw?.split("/");
+            if (folderSplite) {
+              folderSplite?.forEach?.((key, index) => {
+                if (key !== "" && !key?.includes(".json") && !exclude?.includes(key)) {
+                  if (index === 1) {
+                    allFolderJSON?.push({ name: key, isAsseteUid: key?.includes?.("{"), parentName: null })
+                  } else {
+                    allFolderJSON?.push({ name: key, isAsseteUid: key?.includes?.("{"), parentName: folderSplite?.[index - 1] })
+                  }
+                }
+              })
+            }
+          }
+        }
+      }
+    })
+    const obj = {};
+    const uids = {};
+    if (allFolderJSON?.length) {
+      allFolderJSON?.forEach((item) => {
+        if (!item?.isAsseteUid) {
+          obj[item?.name] = {
+            parentName: item?.parentName
+          }
+        } else {
+          if (uids?.[item?.parentName]) {
+            uids[item?.parentName]?.push(item?.name)
+          } else {
+            uids[item?.parentName] = [item?.name]
+          }
+        }
+      })
+    }
+    const finalObject = [];
+    if (Object?.keys(obj)?.length && Object?.keys(uids)?.length) {
+      for (const [key, value] of Object?.entries(obj)) {
+        finalObject?.push({
+          name: key,
+          assetsUids: uids?.[key] ?? [],
+          uid: uid(19),
+          ...value
+        })
+      }
+    }
+    const folders = [];
+    if (finalObject?.length) {
+      finalObject?.forEach((item) => {
+        const obj = {
+          "urlPath": `/assets/${item?.uid}`,
+          "uid": item?.uid,
+          "content_type": "application/vnd.contenstack.folder",
+          "tags": [],
+          "name": item?.name,
+          "is_dir": true,
+          "parent_uid": null,
+          assetsUids: item?.assetsUids
+        }
+        const isPresent = finalObject?.find((ele) => item?.parentName === ele?.name)
+        if (isPresent) {
+          obj.parent_uid = isPresent?.uid
+        }
+        folders?.push(obj)
+      })
+    }
+    if (folders?.length) {
+      helper.writeFile(
+        path.join(
+          process.cwd(),
+          "sitecoreMigrationData/assets",
+          "folders"
+        ),
+        JSON.stringify(folders, null, 4),
+        (err) => {
+          if (err) throw err;
+        }
+      );
+      return folders;
+    } else {
+      return [];
+      console.log("folders are not found.")
+    }
+  }
+}
 
 function ExtractAssets() {
+  const folders = createFolder();
   if (xml_folder?.length) {
     const allAssetJSON = {};
     xml_folder?.forEach((item) => {
@@ -25,7 +127,7 @@ function ExtractAssets() {
             `${global.config.sitecore_folder}/${item}`
           );
           const mestaData = {}
-          mestaData.uid = assetMeta?.item?.$?.id?.replace(/[{}]/g, "")
+          mestaData.uid = idCorrector({ id: assetMeta?.item?.$?.id });
           assetMeta?.item?.fields?.field?.forEach?.((field) => {
             if (field?.$?.key === "blob" && field?.$?.type === "attachment") {
               mestaData.id = field?.content?.replace(/[{}]/g, "")?.toLowerCase();
@@ -74,7 +176,8 @@ function ExtractAssets() {
               filename: `${assetMeta?.item?.$?.name}.${mestaData?.extension}`,
               is_dir: false,
               parent_uid: null,
-              title: assetMeta?.item?.$?.name
+              title: assetMeta?.item?.$?.name,
+              publish_details: []
             }
           }
         }
