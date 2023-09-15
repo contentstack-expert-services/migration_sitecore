@@ -9,6 +9,7 @@ const xml_folder = read(global.config.sitecore_folder);
 contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
 const extraField = "title";
 const AddTitleUrl = true;
+const configChecker = "/content/Common/Configuration";
 
 
 if (!fs.existsSync(contentFolderPath)) {
@@ -272,6 +273,9 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
   const source = helper.readFile(
     path.join(process.cwd(), "/sitecoreMigrationData/MapperData/configuration.json")
   );
+  const sourceTree = helper.readFile(
+    path.join(process.cwd(), "/sitecoreMigrationData/MapperData/configurationTree.json")
+  );
   const schema = [];
   let isTitle = false;
   let isUrl = false;
@@ -301,34 +305,48 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
           compType = item;
         }
         if (item?.key === "source") {
-          if (source) {
-            if (item?.content?.includes("datasource=")) {
-              const gUid = item?.content?.split("}")?.[0]?.replace("datasource={", "")
-              if (gUid) {
-                const dataSourcePaths = read("/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common")
-                let isDataSourcePresent = dataSourcePaths?.find((sur) => sur?.includes(`{${gUid}}`));
-                isDataSourcePresent = isDataSourcePresent?.split(`{${gUid}}`)?.[0]
-                if (isDataSourcePresent) {
-                  const optionsPath = read(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}`)
-                  const refName = [];
-                  optionsPath?.forEach((newPath) => {
-                    if (newPath?.includes("data.json.json") | newPath?.includes("data.json")) {
-                      const data = helper.readFile(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}/${newPath}`)
-                      if (data?.item?.$?.template) {
-                        refName.push(data?.item?.$?.template)
+          if (compType?.content === "Droplink") {
+            if (sourceTree) {
+              if (item?.content?.includes(configChecker)) {
+                sourceType = sourceTree?.[item?.content]
+                compType.content = "Droplist"
+                if (sourceType?.[0]?.key !== undefined) {
+                  advanced = true;
+                }
+              } else {
+                console.log("🚀 ~ file: contenttypes.js:305 ~ field?.fields?.forEach ~ item?.content:", item?.content)
+              }
+            }
+          } else {
+            if (source) {
+              if (item?.content?.includes("datasource=")) {
+                const gUid = item?.content?.split("}")?.[0]?.replace("datasource={", "")
+                if (gUid) {
+                  const dataSourcePaths = read("/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common")
+                  let isDataSourcePresent = dataSourcePaths?.find((sur) => sur?.includes(`{${gUid}}`));
+                  isDataSourcePresent = isDataSourcePresent?.split(`{${gUid}}`)?.[0]
+                  if (isDataSourcePresent) {
+                    const optionsPath = read(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}`)
+                    const refName = [];
+                    optionsPath?.forEach((newPath) => {
+                      if (newPath?.includes("data.json.json") | newPath?.includes("data.json")) {
+                        const data = helper.readFile(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}/${newPath}`)
+                        if (data?.item?.$?.template) {
+                          refName.push(data?.item?.$?.template)
+                        }
                       }
+                    })
+                    if (refName?.length) {
+                      const unique = [...new Set(refName)]
+                      contentTypeKeyMapper({ template: { id: content_type?.uid }, contentType: { uid: { name, uid: field?.key, unique } }, contentTypeKey: "treeListRef" })
                     }
-                  })
-                  if (refName?.length) {
-                    const unique = [...new Set(refName)]
-                    contentTypeKeyMapper({ template: { id: content_type?.uid }, contentType: { uid: { name, uid: field?.key, unique } }, contentTypeKey: "treeListRef" })
                   }
                 }
-              }
-            } else {
-              sourceType = source[item?.content]
-              if (sourceType?.[0]?.key !== undefined) {
-                advanced = true;
+              } else {
+                sourceType = source[item?.content]
+                if (sourceType?.[0]?.key !== undefined) {
+                  advanced = true;
+                }
               }
             }
           }
@@ -405,12 +423,12 @@ function singleContentTypeCreate({ templatePaths }) {
   const templatesStandaedValuePath = [];
   const templatesMetaDataPath = [];
   for (let i = 0; i < newPath?.length; i++) {
-    if (newPath?.[i]?.includes("data.json")) {
+    if (newPath?.[i]?.includes("data.json") || newPath?.[i]?.includes("/data.json.json")) {
       if (newPath?.[i]?.includes("Data") ||
         newPath?.[i]?.includes("Section") ||
         newPath?.[i]?.includes("Translation") ||
         newPath?.[i]?.includes("Info") ||
-        newPath?.[i]?.includes("References") ||
+        newPath?.[i]?.includes("External References") ||
         newPath?.[i]?.includes("Columns")
       ) {
         templatesComponentsPath.push(newPath?.[i])
@@ -462,7 +480,9 @@ function ExtractContentTypes() {
         const isSection = folder?.[i]?.includes("/Section");
         const isTranslationNormal = folder?.[i]?.includes("Translation");
         const isTranslation = folder?.[i]?.includes("/Translation");
-        if (isData || isSection || isTranslation) {
+        const isReferenceNormal = folder?.[i]?.includes("Reference");
+        const isReference = folder?.[i]?.includes("/Reference");
+        if (isData || isSection || isTranslation || isReference) {
           let path = ""
           if (isData) {
             path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Data")?.[0]}`
@@ -473,8 +493,11 @@ function ExtractContentTypes() {
           if (isTranslation) {
             path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Translation")?.[0]}`
           }
+          if (isReference) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("/Reference")?.[0]}`
+          }
           templateWithOutStandard.push(path);
-        } else if (isDataNormal || isTranslationNormal || isSectionNormal) {
+        } else if (isDataNormal || isTranslationNormal || isSectionNormal || isReferenceNormal) {
           let path = ""
           if (isDataNormal) {
             path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Data")?.[0]}`
@@ -484,6 +507,9 @@ function ExtractContentTypes() {
           }
           if (isTranslationNormal) {
             path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Translation")?.[0]}`
+          }
+          if (isReferenceNormal) {
+            path = `${global.config.sitecore_folder}/${folder?.[i]?.split("Reference")?.[0]}`
           }
           if (read(path)?.length) {
             templateWithOutStandard.push(`${path}/`);
@@ -499,7 +525,6 @@ function ExtractContentTypes() {
   }
   if (templateWithOutStandard?.length) {
     const unique = [...new Set(templateWithOutStandard)]
-    console.log("🚀 ~ file: contenttypes.js:419 ~ ExtractContentTypes ~ unique:", unique?.length)
     unique?.forEach((item) => {
       singleContentTypeCreate({ templatePaths: item })
     })

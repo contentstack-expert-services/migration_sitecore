@@ -58,6 +58,15 @@ const assignFolderName = ({ path }) => {
 //   );
 // }
 
+const idCorrector = ({ id }) => {
+  const newId = id?.replace(/[-{}]/g, (match) => match === '-' ? '' : '')
+  if (newId) {
+    return newId?.toLowerCase()
+  } else {
+    return id?.toLowerCase()
+  }
+}
+
 
 function ExtractConfiguration() {
   // const pathMeta = [];
@@ -81,11 +90,14 @@ function ExtractConfiguration() {
     })
   }
   const obj = {};
+  const treeObj = {};
   if (allBatch?.length) {
     allBatch?.forEach((ptl, index) => {
       let pathName;
       const valueArray = [];
+      const valueArrayTree = [];
       const multiValueArray = [];
+      const multiValueArrayTree = [];
       ptl?.batch?.forEach((item) => {
         let newRpl = item.replace(ptl?.path, "")
         let firstTwoChars = newRpl?.substring(0, 2)
@@ -101,6 +113,7 @@ function ExtractConfiguration() {
             } else {
               valueArray.push({ value: components?.item?.$?.name })
             }
+            valueArrayTree.push({ key: components?.item?.$?.name, value: idCorrector({ id: components?.item?.$?.id }) })
           } else {
             const value = components?.item?.fields?.field?.find((item) => item?.$?.key === "value")
             if (value) {
@@ -114,6 +127,7 @@ function ExtractConfiguration() {
                 value: { value: components?.item?.$?.name }
               })
             }
+            multiValueArrayTree.push({ key: components?.item?.$?.name, value: idCorrector({ id: components?.item?.$?.id }) })
           }
         }
       })
@@ -148,7 +162,39 @@ function ExtractConfiguration() {
           })
         }
       }
-      obj[assignFolderName({ path: pathName })] = valueArray
+      if (multiValueArrayTree?.length) {
+        const data = [];
+        multiValueArrayTree?.forEach((ele) => {
+          const filterd = multiValueArrayTree.filter((item) => item?.path === ele?.path)
+          let grouped = {};
+          filterd.forEach(item => {
+            if (!grouped[item.path]) {
+              grouped[item.path] = [];
+            }
+            grouped[item.path].push(item.value);
+          });
+          const result = Object.keys(grouped).map(path => ({
+            path,
+            values: grouped[path]
+          }));
+          if (result?.length) {
+            data?.push(...result)
+          }
+        })
+        const mergedArray = Array?.from(new Set(data?.map(item => item?.path))).map(path => {
+          return {
+            path,
+            values: data?.find(item => item?.path === path)?.values
+          };
+        })
+        if (mergedArray?.length) {
+          mergedArray?.forEach((set) => {
+            treeObj[assignFolderName({ path: set?.path })] = set?.values;
+          })
+        }
+      }
+      treeObj[assignFolderName({ path: pathName })] = valueArrayTree;
+      obj[assignFolderName({ path: pathName })] = valueArray;
     })
   }
   helper.writeFile(
@@ -158,6 +204,17 @@ function ExtractConfiguration() {
       "configuration"
     ),
     JSON.stringify(obj, null, 4),
+    (err) => {
+      if (err) throw err;
+    }
+  );
+  helper.writeFile(
+    path.join(
+      process.cwd(),
+      "sitecoreMigrationData/MapperData",
+      "configurationTree"
+    ),
+    JSON.stringify(treeObj, null, 4),
     (err) => {
       if (err) throw err;
     }
