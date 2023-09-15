@@ -180,6 +180,9 @@ function flatten(data) {
 
 const getAssetsUid = ({ url }) => {
   if (url?.includes("/media")) {
+    if (url?.includes("?")) {
+      url = url?.split("?")?.[0]?.replace(".jpg", "")
+    }
     const newUrl = url?.match?.(/\/media\/(.*).ashx/)?.[1];
     if (newUrl !== undefined) {
       return newUrl;
@@ -238,7 +241,7 @@ const findJsonRte = ({ schema }) => {
   const path = [];
   schema?.forEach((item) => {
     if (item?.data_type === 'json' && item?.field_metadata?.allow_json_rte) {
-      path.push(item?.uid)
+      path.push({ uid: item?.uid, default_value: item?.field_metadata?.default_value })
     }//baki
     if (item?.data_type === "global_field") {
       findJsonRte({ schema: item?.schema })
@@ -262,6 +265,17 @@ const idCorrector = ({ id }) => {
     return id?.toLowerCase()
   }
 }
+
+function isJsonString(str) {
+  try {
+    const cleanedStr = str.replace(/&nbsp;/g, ' ')
+    JSON.parse(cleanedStr);
+    return true;
+  } catch (e) {
+    return false;
+  }
+}
+
 
 const renderEntry = ({ data, contentType }) => {
   const allAssetJSON = helper?.readFile(path.join(
@@ -293,12 +307,18 @@ const renderEntry = ({ data, contentType }) => {
                 const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w.-]*)*\/?$/;
                 const uid = getAssetsUid({ url: htmlData?.attrs?.url });
                 if (!uid?.match(urlRegex)) {
+                  let asset = {};
                   if (uid?.includes('/')) {
-                    console.log("🚀 ~ file: entries.js:295 ~ renderEntry ~ uid:", uid)
+                    for (const [key, value] of Object.entries(allAssetJSON)) {
+                      if (value?.assetPath === `${uid}/`) {
+                        asset = value;
+                      }
+                    }
+                  } else {
+                    const assetUid = idCorrector({ id: makeUid({ uid }) });
+                    asset = allAssetJSON?.[assetUid];
                   }
-                  const assetUid = idCorrector({ id: makeUid({ uid }) });
-                  const asset = allAssetJSON?.[assetUid];
-                  if (asset) {
+                  if (asset?.uid) {
                     const updated = {
                       "uid": htmlData?.uid,
                       "type": "reference",
@@ -326,21 +346,31 @@ const renderEntry = ({ data, contentType }) => {
             }
           }
           entry[item?.$?.key] = jsonValue;
+        } else if (isNaN(item?.content * 1) && isJsonString(item?.content)) {
+          const isKey = rteKeys?.find((pth) => pth?.uid === item?.$?.key)
+          if (isKey?.uid) {
+            entry[item?.$?.key] = attachJsonRte({ content: item?.content })
+          }
         } else {
-          entry[item?.$?.key] = idCorrector({
-            id: item?.content
-          })
+          const isKey = rteKeys?.find((pth) => pth?.uid === item?.$?.key)
+          if (isKey?.uid) {
+            entry[item?.$?.key] = attachJsonRte({ content: item?.content })
+          } else {
+            entry[item?.$?.key] = idCorrector({
+              id: item?.content
+            })
+          }
         }
       }
     })
     if (rteKeys?.length) {
       rteKeys?.forEach((item) => {
-        if (_.get(entry, item) === "") {
-          entry[item] = attachJsonRte({ content: "" })
+        const data = _.get(entry, item?.uid)
+        if (data === "" || data === "\n") {
+          entry[item?.uid] = attachJsonRte({ content: item?.default_value ?? "" })
         }
       })
     }
-
     return unflatten(entry);
   }
 }

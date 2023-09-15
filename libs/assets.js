@@ -12,7 +12,7 @@ const json_file = []
 const xml_folder = read(global.config.sitecore_folder)
 const { uid } = require('uid');
 const assetsSave = "sitecoreMigrationData/assets"
-const exclude = ["1", "en", "2"]
+const exclude = ["1", "en", "2", "3", "4", "5", "6"]
 
 
 const idCorrector = ({ id }) => {
@@ -86,8 +86,7 @@ const createFolder = () => {
           "tags": [],
           "name": item?.name,
           "is_dir": true,
-          "parent_uid": null,
-          assetsUids: item?.assetsUids
+          "parent_uid": null
         }
         const isPresent = finalObject?.find((ele) => item?.parentName === ele?.name)
         if (isPresent) {
@@ -116,8 +115,24 @@ const createFolder = () => {
   }
 }
 
+const AssetsPathSpliter = ({ path, id }) => {
+  let newPath = path?.split(id)?.[0]
+  if (newPath?.includes("media library/")) {
+    newPath = newPath?.split("media library/")?.[1]
+  }
+  return newPath;
+}
+
+const getFolderName = ({ assetPath }) => {
+  const name = assetPath?.split("/")
+  if (name?.length) {
+    return name[name?.length - 2]
+  }
+}
+
 function ExtractAssets() {
-  const folders = createFolder();
+  const folders = [];
+  // createFolder();
   if (xml_folder?.length) {
     const allAssetJSON = {};
     xml_folder?.forEach((item) => {
@@ -127,6 +142,8 @@ function ExtractAssets() {
             `${global.config.sitecore_folder}/${item}`
           );
           const mestaData = {}
+          const assetPath = AssetsPathSpliter({ path: item, id: assetMeta?.item?.$?.id })
+          const folderName = getFolderName({ assetPath })
           mestaData.uid = idCorrector({ id: assetMeta?.item?.$?.id });
           assetMeta?.item?.fields?.field?.forEach?.((field) => {
             if (field?.$?.key === "blob" && field?.$?.type === "attachment") {
@@ -177,8 +194,13 @@ function ExtractAssets() {
               is_dir: false,
               parent_uid: null,
               title: assetMeta?.item?.$?.name,
-              publish_details: []
+              publish_details: [],
+              assetPath
             }
+            const parentUid = folders?.find((item) => item?.name === folderName)
+            // if (parentUid) {
+            //   allAssetJSON[mestaData?.uid].parent_uid = parentUid?.uid
+            // }
           }
         }
       }
