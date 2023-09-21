@@ -14,6 +14,32 @@ const { uid } = require('uid');
 const assetsSave = "sitecoreMigrationData/assets"
 const exclude = ["1", "en", "2", "3", "4", "5", "6"]
 
+const getfolders = (folder, parenUid) => {
+  const data = [];
+  const presnet = folder?.filter((key) => parenUid === key?.parent_uid)
+  if (presnet?.length) {
+    presnet?.forEach((item) => {
+      const newItem = {};
+      const child = getfolders(folder, item?.uid);
+      if (child?.length) {
+        newItem.child = child;
+      }
+      newItem.uid = item?.uid;
+      data?.push(newItem);
+    })
+  }
+  return data;
+}
+
+const cutFiveFolders = (folder) => {
+  folder?.forEach((item) => {
+    if (item?.parent_uid === null) {
+      const allFolder = getfolders(folder, item?.uid)
+      console.log("🚀 ~ file: assets.js:38 ~ folder?.forEach ~ allFolder:", allFolder)
+    }
+  })
+}
+
 
 const idCorrector = ({ id }) => {
   const newId = id?.replace(/[-{}]/g, (match) => match === '-' ? '' : '')
@@ -95,6 +121,7 @@ const createFolder = () => {
         folders?.push(obj)
       })
     }
+    cutFiveFolders(folders);
     if (folders?.length) {
       helper.writeFile(
         path.join(
@@ -131,8 +158,7 @@ const getFolderName = ({ assetPath }) => {
 }
 
 function ExtractAssets() {
-  const folders = [];
-  createFolder();
+  const folders = createFolder();
   if (xml_folder?.length) {
     const allAssetJSON = {};
     xml_folder?.forEach((item) => {
@@ -198,9 +224,9 @@ function ExtractAssets() {
               assetPath
             }
             const parentUid = folders?.find((item) => item?.name === folderName)
-            // if (parentUid) {
-            //   allAssetJSON[mestaData?.uid].parent_uid = parentUid?.uid
-            // }
+            if (parentUid) {
+              allAssetJSON[mestaData?.uid].parent_uid = parentUid?.uid
+            }
           }
         }
       }
