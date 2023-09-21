@@ -127,7 +127,7 @@ function ExtractConfiguration() {
                 value: { value: components?.item?.$?.name }
               })
             }
-            multiValueArrayTree.push({ key: components?.item?.$?.name, value: idCorrector({ id: components?.item?.$?.id }) })
+            multiValueArrayTree.push({ key: components?.item?.$?.name, value: components?.item?.$?.id })
           }
         }
       })

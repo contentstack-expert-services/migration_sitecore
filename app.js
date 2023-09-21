@@ -17,8 +17,9 @@ global.warnLogger = require("./utils/logger")("warn").log;
 var modulesList = [
   // "convert",
   // "configuration",
-  "contenttypes",
-  "reference",
+  // "contenttypes",
+  // "reference",
+  "template"
   // "assets",
   // "entries"
 ]; //to create entries
@@ -113,8 +114,8 @@ module.exports = XMLMigration = async () => {
       global.config.sitecore_folder =
         // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
         // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
-        // "/Users/umesh.more/Downloads/package 45/items"
-        "/Users/umesh.more/Downloads/package 45/items/master/sitecore/templates"
+        "/Users/umesh.more/Downloads/package 45/items"
+      // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/templates"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/Configuration"
       migFunction()
     }

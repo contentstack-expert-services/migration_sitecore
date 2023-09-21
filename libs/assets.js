@@ -132,7 +132,7 @@ const getFolderName = ({ assetPath }) => {
 
 function ExtractAssets() {
   const folders = [];
-  // createFolder();
+  createFolder();
   if (xml_folder?.length) {
     const allAssetJSON = {};
     xml_folder?.forEach((item) => {

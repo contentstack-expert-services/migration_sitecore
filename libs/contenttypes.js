@@ -10,6 +10,7 @@ contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
 const extraField = "title";
 const AddTitleUrl = true;
 const configChecker = "/content/Common/Configuration";
+const append = "a"
 
 
 if (!fs.existsSync(contentFolderPath)) {
@@ -27,8 +28,15 @@ const createTemplate = ({ path, basePath }) => {
   }
 }
 
+function startsWithNumber(str) {
+  return /^\d/.test(str);
+}
+
 const uidCorrector = ({ uid }) => {
-  return _.replace(uid, new RegExp(" ", "g"), '_').toLowerCase()
+  if (startsWithNumber(uid)) {
+    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
+  }
+  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
 }
 
 
@@ -98,7 +106,7 @@ const contentTypeKeyMapper = ({ template, contentType, contentTypeKey = "content
   );
 }
 
-const ContentTypeSchema = ({ type, name, uid, default_value = "", description = "", id, choices = [], advanced }) => {
+const ContentTypeSchema = ({ type, name, uid, default_value = "", description = "", id, choices = [{ value: "NF" }], advanced }) => {
   switch (type) {
     case 'Single-Line Text': {
       return {
@@ -269,6 +277,40 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
   }
 }
 
+function makeUnique({ data }) {
+  const newData = data;
+  let tempMapping = {};
+  if (newData?.[0]?.key) {
+    newData?.forEach(choice => {
+      if (choice?.key) {
+        if (!tempMapping?.[choice?.value]) {
+          tempMapping[choice?.value] = [];
+        }
+        tempMapping[choice?.value].push(choice?.key);
+      }
+    });
+    const result = Object?.entries(tempMapping).map(([value, keys]) => {
+      return {
+        key: keys?.join('/'),
+        value: value
+      };
+    });
+    return result;
+  } else {
+    let uniqueValues = [];
+    const result = data?.filter(item => {
+      if (uniqueValues?.includes(item?.value)) {
+        return false;
+      } else {
+        uniqueValues?.push(item?.value);
+        return true;
+      }
+    });
+    return result;
+  }
+}
+
+
 const contentTypeMapper = ({ components, standardValues, content_type }) => {
   const source = helper.readFile(
     path.join(process.cwd(), "/sitecoreMigrationData/MapperData/configuration.json")
@@ -308,7 +350,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
           if (compType?.content === "Droplink") {
             if (sourceTree) {
               if (item?.content?.includes(configChecker)) {
-                sourceType = sourceTree?.[item?.content]
+                sourceType = makeUnique({ data: sourceTree?.[item?.content] })
                 compType.content = "Droplist"
                 if (sourceType?.[0]?.key !== undefined) {
                   advanced = true;
@@ -343,7 +385,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
                   }
                 }
               } else {
-                sourceType = source[item?.content]
+                sourceType = makeUnique({ data: source?.[item?.content] })
                 if (sourceType?.[0]?.key !== undefined) {
                   advanced = true;
                 }
