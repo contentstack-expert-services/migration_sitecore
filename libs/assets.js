@@ -14,6 +14,12 @@ const { uid } = require('uid');
 const assetsSave = "sitecoreMigrationData/assets"
 const exclude = ["1", "en", "2", "3", "4", "5", "6"]
 
+
+function validFolderName(inputName) {
+  let validName = inputName?.replace(/[^a-zA-Z0-9-_]/g, '_');
+  return validName;
+}
+
 const getfolders = (folder, parenUid) => {
   const data = [];
   const presnet = folder?.filter((key) => parenUid === key?.parent_uid)
@@ -31,13 +37,62 @@ const getfolders = (folder, parenUid) => {
   return data;
 }
 
+function flatten(data) {
+  var result = {};
+  function recurse(cur, prop) {
+    if (Object(cur) !== cur) {
+      result[prop] = cur;
+    } else if (Array.isArray(cur)) {
+      for (var i = 0, l = cur.length; i < l; i++)
+        recurse(cur[i], prop + "[" + i + "]");
+      if (l == 0) result[prop] = [];
+    } else {
+      var isEmpty = true;
+      for (var p in cur) {
+        isEmpty = false;
+        recurse(cur[p], prop ? prop + "." + p : p);
+      }
+      if (isEmpty && prop) result[prop] = {};
+    }
+  }
+  recurse(data, "");
+  return result;
+}
+
 const cutFiveFolders = (folder) => {
+  const allData = [];
   folder?.forEach((item) => {
     if (item?.parent_uid === null) {
       const allFolder = getfolders(folder, item?.uid)
-      console.log("🚀 ~ file: assets.js:38 ~ folder?.forEach ~ allFolder:", allFolder)
+      allFolder?.forEach((item) => {
+        const obj = flatten(item);
+        for (const [key, value] of Object.entries(obj)) {
+          if (key?.match(/child/g)?.length > 3) {
+            const splitStr = key?.split?.('child');
+            const result = splitStr?.slice(0, 3)?.join?.('child')?.slice(0, -1);
+            console.log(result, key?.match(/child/g)?.length)
+            const data = _.get(item, result)
+            if (data?.uid) {
+              allData?.push(data?.uid)
+            }
+          }
+        }
+      })
     }
   })
+  if (allData?.length) {
+    const newFolders = [];
+    const unique = [... new Set(allData)]
+    if (unique?.length) {
+      folder?.forEach((item) => {
+        if (unique?.includes(item?.parent_uid)) {
+          item.parent_uid = null;
+        }
+        newFolders?.push(item)
+      })
+    }
+    return newFolders;
+  }
 }
 
 
@@ -110,7 +165,7 @@ const createFolder = () => {
           "uid": item?.uid,
           "content_type": "application/vnd.contenstack.folder",
           "tags": [],
-          "name": item?.name,
+          "name": validFolderName(item?.name),
           "is_dir": true,
           "parent_uid": null
         }
@@ -121,20 +176,20 @@ const createFolder = () => {
         folders?.push(obj)
       })
     }
-    cutFiveFolders(folders);
-    if (folders?.length) {
+    const newFolder = cutFiveFolders(folders);
+    if (newFolder?.length) {
       helper.writeFile(
         path.join(
           process.cwd(),
           "sitecoreMigrationData/assets",
           "folders"
         ),
-        JSON.stringify(folders, null, 4),
+        JSON.stringify(newFolder, null, 4),
         (err) => {
           if (err) throw err;
         }
       );
-      return folders;
+      return newFolder;
     } else {
       return [];
       console.log("folders are not found.")

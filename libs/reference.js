@@ -4,12 +4,20 @@ const fs = require("fs");
 const _ = require("lodash");
 const read = require("fs-readdir-recursive");
 const helper = require("../utils/helper");
+const restrictedUid = require("../utils");
 const contentConfig = config.modules.contentTypes;
 const xml_folder = read(global.config.sitecore_folder);
 contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
 
+function startsWithNumber(str) {
+  return /^\d/.test(str);
+}
+
 const uidCorrector = ({ uid }) => {
-  return _.replace(uid, new RegExp(" ", "g"), '_').toLowerCase()
+  if (startsWithNumber(uid)) {
+    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
+  }
+  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
 }
 
 const emptyGlobalFiled = () => {
@@ -67,6 +75,11 @@ function ExtractRef() {
           refTree.unique = refTree?.unique?.map((item) => uidCorrector({ uid: item }))
           const uids = contentTypesPathsMaped?.filter((item) => refTree?.unique?.includes(item));
           if (uids?.length) {
+            let newUid = uidCorrector({ uid: refTree?.uid });
+            const isPresent = restrictedUid?.find((item) => item === newUid);
+            if (isPresent) {
+              newUid = `${newUid}_changed`
+            }
             const schemaObject = {
               data_type: "reference",
               display_name: refTree?.name,
@@ -75,7 +88,7 @@ function ExtractRef() {
                 ref_multiple: true,
                 ref_multiple_content_types: true
               },
-              uid: refTree?.uid,
+              uid: newUid,
               mandatory: false,
               multiple: false,
               non_localizable: false,
@@ -95,18 +108,24 @@ function ExtractRef() {
                 uids?.push(singleRef);
               }
             })
+            const newUid = contentType?.schema?.map((item) => item?.uid)
             if (uids?.length) {
               uids?.forEach((key) => {
                 globalFieldUids?.push(key);
+                let newKey = key;
+                const isPresent = newUid?.find((item) => item === key)
+                if (isPresent) {
+                  newKey = `${isPresent}_changed`
+                }
                 const schemaObject = {
                   "data_type": "global_field",
-                  "display_name": key,
+                  "display_name": newKey,
                   "reference_to": key,
                   "field_metadata": {
                     "ref_multiple": true,
                     "ref_multiple_content_types": true
                   },
-                  "uid": key,
+                  "uid": uidCorrector({ uid: newKey }),
                   "mandatory": false,
                   "multiple": false,
                   "non_localizable": false,

@@ -103,11 +103,11 @@ function createContentType(finalMapped) {
 
 function ExtractTemplate() {
   const parentData = {};
-  const contnet_folder = read(`${global.config.sitecore_folder}/master/sitecore / content / AlaskaAir / content`);
+  const contnet_folder = read(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content`);
   if (contnet_folder?.length) {
     contnet_folder?.forEach((item) => {
       if (item?.includes("data.json")) {
-        const data = helper.readFile(`${global.config.sitecore_folder} /master/sitecore / content / AlaskaAir / content / ${item} `);
+        const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content/${item} `);
         if (parentData?.[data?.item?.$?.parentid]) {
           parentData[data?.item?.$?.parentid].child.push(data?.item?.$)
         } else {

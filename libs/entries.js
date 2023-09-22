@@ -386,6 +386,7 @@ function ExtractEntries() {
       const data = helper?.readFile(`${global.config.sitecore_folder}/${folder}`)
       if (data) {
         const entry = renderEntry({ data, contentType: uidCorrector({ uid: data?.item?.$?.template }) })
+        console.log("🚀 ~ file: entries.js:389 ~ entry:", entry)
         // data?.item?.$?.language
         if (entry) {
           entry.url = url;

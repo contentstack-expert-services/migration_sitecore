@@ -4,6 +4,7 @@ const fs = require("fs");
 const _ = require("lodash");
 const read = require("fs-readdir-recursive");
 const helper = require("../utils/helper");
+const restrictedUid = require("../utils");
 const contentConfig = config.modules.contentTypes;
 const xml_folder = read(global.config.sitecore_folder);
 contentFolderPath = path.resolve(config.data, config.contenttypes) || {};
@@ -107,6 +108,10 @@ const contentTypeKeyMapper = ({ template, contentType, contentTypeKey = "content
 }
 
 const ContentTypeSchema = ({ type, name, uid, default_value = "", description = "", id, choices = [{ value: "NF" }], advanced }) => {
+  const isPresent = restrictedUid?.find((item) => item === uid);
+  if (isPresent) {
+    uid = `${uid}_changed`
+  }
   switch (type) {
     case 'Single-Line Text': {
       return {

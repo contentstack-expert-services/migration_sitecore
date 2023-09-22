@@ -20,8 +20,8 @@ var modulesList = [
   // "contenttypes",
   // "reference",
   // "template"
-  "assets",
-  // "entries"
+  // "assets",
+  "entries"
 ]; //to create entries
 // var contentList = ["convert"]; // to create content type for the entries
 var _export = [];
@@ -113,8 +113,8 @@ module.exports = XMLMigration = async () => {
     try {
       global.config.sitecore_folder =
         // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
-        // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
-        "/Users/umesh.more/Downloads/package 45/items"
+        "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
+      // "/Users/umesh.more/Downloads/package 45/items"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/templates"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/Configuration"
       migFunction()
