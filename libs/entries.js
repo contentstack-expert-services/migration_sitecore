@@ -362,7 +362,7 @@ const renderEntry = ({ data, contentType }) => {
           const isKey = rteKeys?.find((pth) => pth?.uid === item?.$?.key)
           if (isKey?.uid) {
             entry[item?.$?.key] = attachJsonRte({ content: item?.content })
-          } else {
+          } else if (item?.content !== "") {
             entry[item?.$?.key] = idCorrector({
               id: item?.content
             })
@@ -418,7 +418,7 @@ function ExtractEntries() {
         // data?.item?.$?.language
         if (entry) {
           entry.url = url;
-          entry.title = url;
+          entry.title = data?.item?.$?.name;
           entry.uid = idCorrector({ id: data?.item?.$?.id });
           handleFile({ locale: "en-us", contentType: uidCorrector({ uid: data?.item?.$?.template }), entry, uid: entry?.uid })
         }
@@ -452,10 +452,18 @@ function ExtractEntries() {
     if (refs?.length) {
       const uniqueData = refs?.filter((v, i, a) => a?.findIndex(t => t?.uid === v?.uid) === i);
       if (entryData?.title && uniqueData?.length) {
-        uniqueData?.map((uid) => {
-          console.log("🚀 ~ file: entries.js:456 ~ uniqueData?.map ~ uid:", uid)
+        const filtredData = [];
+        uniqueData?.forEach((uid) => {
+          const content_type = helper?.readFile(path.join(
+            process.cwd(),
+            `sitecoreMigrationData/content_types`,
+            `${uid?._content_type_uid}.json`
+          ))
+          if (content_type?.uid) {
+            filtredData?.push(uid)
+          }
         })
-        entryData.components = uniqueData;
+        entryData.components = filtredData;
         let foundTemp;
         TemplatesJson?.forEach((temp) => {
           const isPresent = temp?.ids?.find((item) => idCorrector({ id: item }) === key)
