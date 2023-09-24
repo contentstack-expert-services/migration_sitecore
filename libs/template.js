@@ -35,7 +35,7 @@ const uidCorrector = ({ uid }) => {
 
 
 function createContentType(finalMapped) {
-  finalMapped?.forEach((item, i) => {
+  finalMapped?.forEach((item) => {
     const uidThere = [];
     item?.contentTypes?.forEach((ele) => {
       const contentType = helper.readFile(`${contentFolderPath}/${uidCorrector({ uid: ele })}.json`)
@@ -45,8 +45,8 @@ function createContentType(finalMapped) {
     })
     if (uidThere?.length) {
       const obj = {
-        title: `Tempalate ${i > 0 ? i : ""}`,
-        uid: `tempalate_${i > 0 ? i : ""}`,
+        title: item?.title,
+        uid: item?.uid,
       };
       obj.schema = [{
         "display_name": "Title",
@@ -107,7 +107,7 @@ function ExtractTemplate() {
   if (contnet_folder?.length) {
     contnet_folder?.forEach((item) => {
       if (item?.includes("data.json")) {
-        const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content/${item} `);
+        const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content/${item}`);
         if (parentData?.[data?.item?.$?.parentid]) {
           parentData[data?.item?.$?.parentid].child.push(data?.item?.$)
         } else {
@@ -192,7 +192,7 @@ function ExtractTemplate() {
   const finalMapped = [];
   idsMapped = idsMapped?.sort((a, b) => b?.contentTypes?.length - a?.contentTypes?.length);
   const usedCT = [];
-  idsMapped?.forEach((item) => {
+  idsMapped?.forEach((item, i) => {
     const ids = [];
     const isPresent = usedCT?.find((ft) => areArraysEquivalent(item?.contentTypes, ft))
     if (isPresent === undefined) {
@@ -206,7 +206,12 @@ function ExtractTemplate() {
           }
         }
       })
-      finalMapped.push({ contentTypes: item?.contentTypes, ids })
+      finalMapped.push({
+        contentTypes: item?.contentTypes,
+        ids,
+        title: `Tempalate ${i > 0 ? i : ""}`,
+        uid: `tempalate${i > 0 ? `_${i}` : ""}`,
+      })
     }
   })
   helper.writeFile(

@@ -166,6 +166,15 @@ function ExtractRef() {
       allGlobalFiels?.push(content);
     })
     if (allGlobalFiels?.length) {
+      allGlobalFiels?.forEach((item) => {
+        const schemaData = [];
+        item?.schema?.forEach?.((schema) => {
+          if (!(["title", "url"]?.includes(schema?.uid) && schema?.field_metadata?._default)) {
+            schemaData?.push(schema);
+          }
+        })
+        item.schema = schemaData;
+      })
       helper.writeFile(
         path.join(
           process.cwd(),

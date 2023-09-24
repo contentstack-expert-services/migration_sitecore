@@ -104,8 +104,15 @@ function content_typeField(schema, path = "") {
   return pathsUid;
 }
 
+function startsWithNumber(str) {
+  return /^\d/.test(str);
+}
+
 const uidCorrector = ({ uid }) => {
-  return _.replace(uid, new RegExp(" ", "g"), '_').toLowerCase()
+  if (startsWithNumber(uid)) {
+    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
+  }
+  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
 }
 
 
@@ -378,15 +385,36 @@ const renderEntry = ({ data, contentType }) => {
 
 
 function ExtractEntries() {
+  const obj = {};
+  const tempData = {};
   for (let i = 0; i < xml_folder?.length; i++) {
     const folder = xml_folder?.[i];
     if ((folder?.includes("data.json") || folder?.includes("data.json.json")) && !folder?.includes("Common/Configuration/")) {
       const key = "/content";
       const url = folder?.split?.(key)?.[1]?.split?.("/{")?.[0];
       const data = helper?.readFile(`${global.config.sitecore_folder}/${folder}`)
+      const uid = uidCorrector({ uid: data?.item?.$?.template });
+      data.item.$.template = uid;
+      const id = idCorrector({ id: data?.item?.$?.id });
+      tempData[id] = { url, ...data?.item?.$ };
+      if (data?.item?.$?.key?.includes("_")) {
+        const parentid = idCorrector({ id: data?.item?.$?.parentid });
+        if (obj[parentid]) {
+          obj[parentid]?.push({
+            _content_type_uid: uid,
+            uid: id
+          })
+        } else {
+          obj[parentid] = [
+            {
+              _content_type_uid: uid,
+              uid: id
+            }
+          ]
+        }
+      }
       if (data) {
         const entry = renderEntry({ data, contentType: uidCorrector({ uid: data?.item?.$?.template }) })
-        console.log("🚀 ~ file: entries.js:389 ~ entry:", entry)
         // data?.item?.$?.language
         if (entry) {
           entry.url = url;
@@ -394,6 +422,48 @@ function ExtractEntries() {
           entry.uid = idCorrector({ id: data?.item?.$?.id });
           handleFile({ locale: "en-us", contentType: uidCorrector({ uid: data?.item?.$?.template }), entry, uid: entry?.uid })
         }
+      }
+    }
+  }
+
+  const TemplatesJson = helper?.readFile(path.join(
+    process.cwd(),
+    `sitecoreMigrationData/MapperData`,
+    "template.json"
+  ))
+
+  for (const [key, value] of Object?.entries(obj)) {
+    const refs = [];
+    let entryData = {};
+    if (tempData?.[key]) {
+      refs?.push({
+        _content_type_uid: tempData?.[key]?.template,
+        uid: key
+      })
+      entryData = {
+        title: tempData?.[key]?.name,
+        url: tempData?.[key]?.url,
+        uid: key
+      }
+    }
+    if (value?.length) {
+      refs?.push(...value)
+    }
+    if (refs?.length) {
+      const uniqueData = refs?.filter((v, i, a) => a?.findIndex(t => t?.uid === v?.uid) === i);
+      if (entryData?.title && uniqueData?.length) {
+        uniqueData?.map((uid) => {
+          console.log("🚀 ~ file: entries.js:456 ~ uniqueData?.map ~ uid:", uid)
+        })
+        entryData.components = uniqueData;
+        let foundTemp;
+        TemplatesJson?.forEach((temp) => {
+          const isPresent = temp?.ids?.find((item) => idCorrector({ id: item }) === key)
+          if (isPresent) {
+            foundTemp = temp
+          }
+        })
+        handleFile({ locale: "en-us", contentType: foundTemp?.uid, entry: entryData, uid: entryData?.uid })
       }
     }
   }
