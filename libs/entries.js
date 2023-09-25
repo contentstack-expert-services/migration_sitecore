@@ -303,7 +303,8 @@ const renderEntry = ({ data, contentType }) => {
     data?.item?.fields?.field?.forEach?.((item) => {
       if (!item?.$?.key?.includes("__")) {
         item.$.key = appendKey({ key: item?.$?.key, keys })
-        if (containsHTML(item?.content)) {
+        const isPresent = rteKeys?.find((et) => et === item?.$?.key);
+        if (containsHTML(item?.content) && isPresent) {
           const jsonValue = attachJsonRte({ content: item?.content });
           const flattenHtml = flatten(jsonValue);
           for (const [key, value] of Object.entries(flattenHtml)) {
@@ -418,7 +419,7 @@ function ExtractEntries() {
         // data?.item?.$?.language
         if (entry) {
           entry.url = url;
-          entry.title = data?.item?.$?.name;
+          entry.title = url;
           entry.uid = idCorrector({ id: data?.item?.$?.id });
           handleFile({ locale: "en-us", contentType: uidCorrector({ uid: data?.item?.$?.template }), entry, uid: entry?.uid })
         }
