@@ -284,6 +284,7 @@ function isJsonString(str) {
 }
 
 
+
 const renderEntry = ({ data, contentType }) => {
   const allAssetJSON = helper?.readFile(path.join(
     process.cwd(),
@@ -304,7 +305,7 @@ const renderEntry = ({ data, contentType }) => {
       if (!item?.$?.key?.includes("__")) {
         item.$.key = appendKey({ key: item?.$?.key, keys })
         const isPresent = rteKeys?.find((et) => et === item?.$?.key);
-        if (containsHTML(item?.content) && isPresent) {
+        if (containsHTML(item?.content)) {
           const jsonValue = attachJsonRte({ content: item?.content });
           const flattenHtml = flatten(jsonValue);
           for (const [key, value] of Object.entries(flattenHtml)) {
@@ -326,6 +327,7 @@ const renderEntry = ({ data, contentType }) => {
                     const assetUid = idCorrector({ id: makeUid({ uid }) });
                     asset = allAssetJSON?.[assetUid];
                   }
+                  console.log("🚀 ~ file: entries.js:330 ~ renderEntry ~ asset:", asset)
                   if (asset?.uid) {
                     const updated = {
                       "uid": htmlData?.uid,
@@ -454,6 +456,7 @@ function ExtractEntries() {
       const uniqueData = refs?.filter((v, i, a) => a?.findIndex(t => t?.uid === v?.uid) === i);
       if (entryData?.title && uniqueData?.length) {
         const filtredData = [];
+        const contentTypeData = [];
         uniqueData?.forEach((uid) => {
           const content_type = helper?.readFile(path.join(
             process.cwd(),
@@ -461,10 +464,22 @@ function ExtractEntries() {
             `${uid?._content_type_uid}.json`
           ))
           if (content_type?.uid) {
-            filtredData?.push(uid)
+            filtredData?.push(uid);
+            contentTypeData?.push(content_type);
           }
         })
-        entryData.components = filtredData;
+        filtredData?.forEach((dat) => {
+          const entry = helper?.readFile(path.join(
+            process.cwd(),
+            `sitecoreMigrationData/entries/${dat?._content_type_uid}`,
+            `en-us.json`
+          ))
+          if (entry?.[dat?.uid]) {
+            entryData[dat?._content_type_uid] = entry?.[dat?.uid]
+          } else {
+            console.log("entry not found")
+          }
+        })
         let foundTemp;
         TemplatesJson?.forEach((temp) => {
           const isPresent = temp?.ids?.find((item) => idCorrector({ id: item }) === key)

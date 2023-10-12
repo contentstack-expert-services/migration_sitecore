@@ -37,10 +37,12 @@ const uidCorrector = ({ uid }) => {
 function createContentType(finalMapped) {
   finalMapped?.forEach((item) => {
     const uidThere = [];
+    const contentSchema = [];
     item?.contentTypes?.forEach((ele) => {
       const contentType = helper.readFile(`${contentFolderPath}/${uidCorrector({ uid: ele })}.json`)
       if (contentType) {
-        uidThere?.push(contentType.uid)
+        uidThere?.push(contentType?.uid);
+        contentSchema?.push(contentType);
       }
     })
     if (uidThere?.length) {
@@ -70,21 +72,25 @@ function createContentType(finalMapped) {
         "multiple": false,
         "unique": false
       }]
-      const schemaObject = {
-        data_type: "reference",
-        display_name: "Components",
-        reference_to: uidThere,
-        field_metadata: {
-          ref_multiple: true,
-          ref_multiple_content_types: true
-        },
-        uid: "components",
-        mandatory: false,
-        multiple: false,
-        non_localizable: false,
-        unique: false
-      };
-      obj.schema?.push(schemaObject)
+      const groups = []
+      contentSchema?.forEach((item) => {
+        const data = {
+          "data_type": "group",
+          "display_name": item?.title,
+          "field_metadata": {
+            "description": "",
+            "instruction": ""
+          },
+          "schema": item?.schema,
+          "uid": item?.uid,
+          "mandatory": false,
+          "multiple": false,
+          "non_localizable": false,
+          "unique": false
+        }
+        groups?.push(data)
+      })
+      obj.schema?.push(...groups)
       helper.writeFile(
         path.join(
           process.cwd(),
@@ -209,8 +215,8 @@ function ExtractTemplate() {
       finalMapped.push({
         contentTypes: item?.contentTypes,
         ids,
-        title: `Tempalate ${i > 0 ? i : ""}`,
-        uid: `tempalate${i > 0 ? `_${i}` : ""}`,
+        title: `Template ${i > 0 ? i : ""}`,
+        uid: `template${i > 0 ? `_${i}` : ""}`,
       })
     }
   })
