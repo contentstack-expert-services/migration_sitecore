@@ -62,15 +62,15 @@ const pages_to_crawl = [
   "/content/about-us/history",
   "/content/about-us/history/bob-ellis",
   "/content/about-us/history/carpet-pilots",
-  //   # "/content/about-us/history/history-by-decade",
-  //   # "/content/about-us/history/horizon-air-history",
-  //   # "/content/about-us/history/mac-mcgee",
-  //   # "/content/about-us/history/magic-carpet",
-  //   # "/content/about-us/history/mudhole-smith",
-  //   # "/content/about-us/history/pioneers",
-  //   # "/content/about-us/history/shell-simmons",
-  //   # "/content/about-us/history/star-air-service",
-  //   # "/content/about-us/history/wooten-magic-carpet"
+  "/content/about-us/history/history-by-decade",
+  "/content/about-us/history/horizon-air-history",
+  "/content/about-us/history/mac-mcgee",
+  "/content/about-us/history/magic-carpet",
+  "/content/about-us/history/mudhole-smith",
+  "/content/about-us/history/pioneers",
+  "/content/about-us/history/shell-simmons",
+  "/content/about-us/history/star-air-service",
+  "/content/about-us/history/wooten-magic-carpet"
 ]
 
 const getAssetsUid = ({ url }) => {
@@ -168,7 +168,6 @@ const getPageSource = async (page) => {
 
 async function ExtractEntry(page) {
   const data = await getPageSource(page);
-  console.log("🚀 ~ file: staticHtml.js:127 ~ ExtractEntry ~ data:", data)
   const jsonValue = data?.html;
   const allAssetJSON = helper?.readFile(path.join(
     process.cwd(),
@@ -247,7 +246,6 @@ async function ExtractEntry(page) {
         "javascript_references": ""
       }
     },
-    "static_html": data?.html,
     "page_components": [
       {
         "generic_text_rendering": {
@@ -265,8 +263,8 @@ async function ExtractEntry(page) {
     "_in_progress": false,
     "url": page
   }
-  handleFile({ locale: "en-us", contentType: "pages", entry: dictionary, uid: uid(19) })
-  // console.log("🚀 ~ file: staticHtml.js:181 ~ ExtractEntry ~ dictionary:", dictionary)
+  handleFile({ locale: "en-us", contentType: "flex_page", entry: dictionary, uid: uid(19) })
+  //if you want to chnage contentType change the contentType name
 }
 
 function ExtractTemplate() {

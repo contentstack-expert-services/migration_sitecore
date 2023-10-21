@@ -1,5 +1,5 @@
 {
-  "name": "migration-wordpress-xml",
+  "name": "migration-sitecore",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -23,6 +23,7 @@
     "ansi-colors": "^4.1.3",
     "axios": "^1.3.4",
     "chalk": "^4.1.0",
+    "cheerio": "^1.0.0-rc.12",
     "cli-progress": "^3.11.1",
     "fs-readdir-recursive": "^1.1.0",
     "inquirer": "^8.2.4",

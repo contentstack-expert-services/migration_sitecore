@@ -178,6 +178,12 @@ const createFolder = () => {
     }
     const newFolder = cutFiveFolders(folders);
     if (newFolder?.length) {
+      if (!fs.existsSync(`sitecoreMigrationData/assets`)) {
+        fs.mkdirSync(path.join(
+          process.cwd(),
+          `sitecoreMigrationData/assets`
+        ), { recursive: true });
+      }
       helper.writeFile(
         path.join(
           process.cwd(),

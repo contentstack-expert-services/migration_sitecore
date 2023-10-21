@@ -1,1 +1,1 @@
-# migration-wordpress-xml
+# migration-sitecore
