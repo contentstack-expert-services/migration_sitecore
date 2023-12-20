@@ -176,7 +176,10 @@ const createFolder = () => {
         folders?.push(obj)
       })
     }
-    const newFolder = cutFiveFolders(folders);
+    let newFolder = cutFiveFolders(folders);
+    if (newFolder?.length === (0 || undefined)) {
+      newFolder = folders
+    }
     if (newFolder?.length) {
       if (!fs.existsSync(`sitecoreMigrationData/assets`)) {
         fs.mkdirSync(path.join(

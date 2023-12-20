@@ -17,12 +17,12 @@ global.warnLogger = require("./utils/logger")("warn").log;
 var modulesList = [
   // "convert",
   // "configuration",
-  // "contenttypes",
+  "contenttypes",
   // "reference",
   // "template"
   // "assets",
   // "entries",
-  "staticHtml"
+  // "staticHtml"
 ]; //to create entries
 // var contentList = ["convert"]; // to create content type for the entries
 var _export = [];
@@ -113,15 +113,17 @@ module.exports = XMLMigration = async () => {
   inquirer.prompt(question).then(async (answer) => {
     try {
       global.config.sitecore_folder =
-        // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
-        "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
+        // "/Users/umesh.more/Downloads/history-only/items"
+        // "/Users/umesh.more/Downloads/package 71/items/master/sitecore/content/Common/Configuration"
+        "/Users/umesh.more/Downloads/package 72/items"
+      // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
+      // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
       // "/Users/umesh.more/Documents/package/items"
       // "/Users/umesh.more/Downloads/package 45/items"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/templates"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/Configuration"
       migFunction()
-    }
-    catch (error) {
+    } catch (error) {
       console.log(chalk.red(error.message));
     }
   });
