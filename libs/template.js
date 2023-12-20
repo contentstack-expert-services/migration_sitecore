@@ -94,10 +94,10 @@ function createContentType(finalMapped) {
       helper.writeFile(
         path.join(
           process.cwd(),
-          "sitecoreMigrationData/content_types",
-          obj?.uid
+          "sitecoreMigrationData/content_types"
         ),
         JSON.stringify(obj, null, 4),
+        obj?.uid,
         (err) => {
           if (err) throw err;
         }
@@ -109,11 +109,11 @@ function createContentType(finalMapped) {
 
 function ExtractTemplate() {
   const parentData = {};
-  const contnet_folder = read(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content`);
+  const contnet_folder = read(`${global.config.sitecore_folder}/master/sitecore/content/API`);
   if (contnet_folder?.length) {
     contnet_folder?.forEach((item) => {
       if (item?.includes("data.json")) {
-        const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/AlaskaAir/content/${item}`);
+        const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/API/${item}`);
         if (parentData?.[data?.item?.$?.parentid]) {
           parentData[data?.item?.$?.parentid].child.push(data?.item?.$)
         } else {
@@ -224,9 +224,9 @@ function ExtractTemplate() {
     path.join(
       process.cwd(),
       "sitecoreMigrationData/MapperData",
-      "template"
     ),
     JSON.stringify(finalMapped, null, 4),
+    "template",
     (err) => {
       if (err) throw err;
     }

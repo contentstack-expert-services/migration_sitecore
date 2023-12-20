@@ -190,10 +190,10 @@ const createFolder = () => {
       helper.writeFile(
         path.join(
           process.cwd(),
-          "sitecoreMigrationData/assets",
-          "folders"
+          "sitecoreMigrationData/assets"
         ),
         JSON.stringify(newFolder, null, 4),
+        "folders",
         (err) => {
           if (err) throw err;
         }
@@ -298,10 +298,10 @@ function ExtractAssets() {
     helper.writeFile(
       path.join(
         process.cwd(),
-        "sitecoreMigrationData/assets",
-        "assets"
+        "sitecoreMigrationData/assets"
       ),
       JSON.stringify(allAssetJSON, null, 4),
+      "assets",
       (err) => {
         if (err) throw err;
       }
