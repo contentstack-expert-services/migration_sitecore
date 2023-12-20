@@ -46,7 +46,7 @@ function ExtractFiles() {
       if (xml_folder?.[i]?.includes?.("/xml")) {
         const xml_data = `${global.config.sitecore_folder}/${xml_folder?.[i]}`
         const json_data = xml_data.replace('/xml', '')
-        if (fs.existsSync(path.resolve(json_data, config.json_filename))) {
+        if (!fs.existsSync(path.resolve(json_data, config.json_filename))) {
           parseString(helper.readXMLFile(xml_data), { explicitArray: false }, function (err, result) {
             if (err) {
               errorLogger("failed to parse xml: ", err);
@@ -56,14 +56,13 @@ function ExtractFiles() {
             }
           })
         } else {
-          console.log("test")
-          // fs.unlink(path.resolve(json_data, config.json_filename), (err) => {
-          //   if (err) {
-          //     console.log(err)
-          //     throw err
-          //   }
-          //   // console.log('File was deleted');
-          // });
+          fs.unlink(path.resolve(json_data, config.json_filename), (err) => {
+            if (err) {
+              console.log(err)
+              throw err
+            }
+            console.log('File was deleted');
+          });
         }
       }
     }

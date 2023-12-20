@@ -277,8 +277,66 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
       }
     }
 
+    case "Date": {
+      return {
+        "data_type": "isodate",
+        "display_name": name,
+        uid,
+        "startDate": null,
+        "endDate": null,
+        "field_metadata": {
+          description,
+          "default_value": {},
+          "hide_time": true
+        },
+        "mandatory": false,
+        "multiple": false,
+        "non_localizable": false,
+        "unique": false
+      }
+    }
+
+    case "Time": {
+      return {
+        "data_type": "isodate",
+        "display_name": name,
+        uid,
+        "startDate": null,
+        "endDate": null,
+        "field_metadata": {
+          description,
+          "default_value": {},
+        },
+        "mandatory": false,
+        "multiple": false,
+        "non_localizable": false,
+        "unique": false
+      }
+    }
+
+    case 'Grouped Droplist': {
+      if (choices?.length) {
+        return {
+          id,
+          "data_type": "text",
+          "display_name": name,
+          "display_type": "dropdown",
+          "enum": {
+            "advanced": advanced,
+            choices
+          },
+          "multiple": false,
+          uid,
+          "field_metadata": {
+            description,
+          },
+          "mandatory": false,
+          "unique": false
+        };
+      }
+    }
     default: {
-      console.log(type, name)
+      console.log(name, "=>>", type)
     }
   }
 }
@@ -373,15 +431,15 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
                 if (item?.content?.includes("datasource=")) {
                   const gUid = item?.content?.split("}")?.[0]?.replace("datasource={", "")
                   if (gUid) {
-                    const dataSourcePaths = read("/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common")
+                    const dataSourcePaths = read(`${global.config.sitecore_folder}/master/sitecore/content/Common`)
                     let isDataSourcePresent = dataSourcePaths?.find((sur) => sur?.includes(`{${gUid}}`));
                     isDataSourcePresent = isDataSourcePresent?.split(`{${gUid}}`)?.[0]
                     if (isDataSourcePresent) {
-                      const optionsPath = read(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}`)
+                      const optionsPath = read(`${global.config.sitecore_folder}/master/sitecore/content/Common/${isDataSourcePresent}`)
                       const refName = [];
                       optionsPath?.forEach((newPath) => {
                         if (newPath?.includes("data.json.json") | newPath?.includes("data.json")) {
-                          const data = helper.readFile(`/Users/umesh.more/Downloads/package 45/items/master/sitecore/content/Common/${isDataSourcePresent}/${newPath}`)
+                          const data = helper.readFile(`${global.config.sitecore_folder}/master/sitecore/content/Common/${isDataSourcePresent}/${newPath}`)
                           if (data?.item?.$?.template) {
                             refName.push(data?.item?.$?.template)
                           }
@@ -421,20 +479,10 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
         }
       }
     }
-    if (AddTitleUrl && isUrl === false) {
-      schema.unshift({
-        "display_name": "URL",
-        "uid": "url",
-        "data_type": "text",
-        "mandatory": true,
-        "field_metadata": {
-          "_default": true
-        },
-        "multiple": false,
-        "unique": false
-      })
-    }
-    if (AddTitleUrl && isTitle === false) {
+    const isPresent = schema?.find((item) =>
+      item?.data_type === "text" && item?.uid === "title"
+    )
+    if (isPresent === undefined) {
       schema.unshift({
         "display_name": "Title",
         "uid": "title",

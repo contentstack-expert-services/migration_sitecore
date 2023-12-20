@@ -25,9 +25,9 @@ const emptyGlobalFiled = () => {
     path.join(
       process.cwd(),
       "sitecoreMigrationData/global_fields",
-      "globalfields"
     ),
     JSON.stringify([], null, 4),
+    "globalfields",
     (err) => {
       if (err) throw err;
     }
@@ -47,9 +47,9 @@ const writeSchemaJson = () => {
         path.join(
           process.cwd(),
           "sitecoreMigrationData/content_types",
-          "schema"
         ),
         JSON.stringify(schema, null, 4),
+        "schema",
         (err) => {
           if (err) throw err;
         }
@@ -140,10 +140,10 @@ function ExtractRef() {
       helper.writeFile(
         path.join(
           process.cwd(),
-          "sitecoreMigrationData/content_types",
-          contentType?.uid
+          "sitecoreMigrationData/content_types"
         ),
         JSON.stringify(contentType, null, 4),
+        contentType?.uid,
         (err) => {
           if (err) throw err;
         }
@@ -178,10 +178,10 @@ function ExtractRef() {
       helper.writeFile(
         path.join(
           process.cwd(),
-          "sitecoreMigrationData/global_fields",
-          "globalfields"
+          "sitecoreMigrationData/global_fields"
         ),
         JSON.stringify(allGlobalFiels, null, 4),
+        "globalfields",
         (err) => {
           if (err) throw err;
         }
