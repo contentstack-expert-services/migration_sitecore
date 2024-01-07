@@ -18,10 +18,10 @@ var modulesList = [
   // "convert",
   // "configuration",
   "contenttypes",
-  // "reference",
-  // "template"
+  "reference",
+  "template",
   // "assets",
-  // "entries",
+  "entries",
   // "staticHtml"
 ]; //to create entries
 // var contentList = ["convert"]; // to create content type for the entries
@@ -115,7 +115,8 @@ module.exports = XMLMigration = async () => {
       global.config.sitecore_folder =
         // "/Users/umesh.more/Downloads/history-only/items"
         // "/Users/umesh.more/Downloads/package 71/items/master/sitecore/content/Common/Configuration"
-        "/Users/umesh.more/Downloads/package 72/items"
+        "/Users/umesh.more/Downloads/package 75/items"
+      // "/Users/umesh.more/Downloads/package 77/items"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
       // "/Users/umesh.more/Documents/package/items"

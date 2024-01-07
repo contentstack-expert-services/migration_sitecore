@@ -26,6 +26,33 @@ function startsWithNumber(str) {
   return /^\d/.test(str);
 }
 
+function mergeArrays(arrays) {
+  const mergedArray = [];
+  arrays?.forEach((currentArray) => {
+    const data = []
+    currentArray?.contentTypes?.forEach((element) => {
+      arrays?.forEach((ele) => {
+        const dataArray = ele?.contentTypes?.find((item) => item === element)
+        if (dataArray) {
+          data?.push(ele)
+        }
+      })
+    });
+    if (data?.length > 1) {
+      const obj = { contentTypes: [], ids: [] };
+      data?.forEach((item) => {
+        obj.contentTypes?.push(...item?.contentTypes)
+        obj?.ids?.push(...item?.ids)
+      })
+      obj.contentTypes = [...new Set(obj?.contentTypes)]?.sort()
+      obj.ids = [...new Set(obj?.ids)]?.sort()
+      mergedArray?.push(obj);
+    }
+  });
+  return _.uniqWith(mergedArray, _.isEqual)
+}
+
+
 const uidCorrector = ({ uid }) => {
   if (startsWithNumber(uid)) {
     return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
@@ -106,6 +133,19 @@ function createContentType(finalMapped) {
   })
 }
 
+const deleteContentTypes = ({ content }) => {
+  [...new Set(content)]?.forEach?.((item) => {
+    fs.existsSync(`${path.join(process.cwd(), "sitecoreMigrationData/content_types")}/${item}.json`, function (err, stats) {
+      if (err) {
+        console.error(err);
+      }
+      fs.unlink(`${path.join(process.cwd(), "sitecoreMigrationData/content_types")}/${item}.json`, function (err) {
+        if (err) console.log(err);
+        console.log('file deleted successfully');
+      });
+    });
+  })
+}
 
 function ExtractTemplate() {
   const parentData = {};
@@ -191,7 +231,7 @@ function ExtractTemplate() {
           ids
         })
       } else {
-        console.log("All ready created")
+        // console.log("All ready created")
       }
     }
   })
@@ -220,18 +260,28 @@ function ExtractTemplate() {
       })
     }
   })
+  const deleteContent = [];
+  const data = mergeArrays?.(finalMapped)?.map?.((item, i) => {
+    deleteContent?.push(...item?.contentTypes)
+    return {
+      title: `Template ${i > 0 ? i : ""}`,
+      uid: `template${i > 0 ? `_${i}` : ""}`,
+      ...item
+    }
+  })
+  // deleteContentTypes({ content: deleteContent })
   helper.writeFile(
     path.join(
       process.cwd(),
       "sitecoreMigrationData/MapperData",
     ),
-    JSON.stringify(finalMapped, null, 4),
+    JSON.stringify(data, null, 4),
     "template",
     (err) => {
       if (err) throw err;
     }
   );
-  createContentType(finalMapped)
+  createContentType(data)
 }
 
 ExtractTemplate.prototype = {
