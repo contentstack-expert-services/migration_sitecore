@@ -222,7 +222,7 @@ const getFolderName = ({ assetPath }) => {
 }
 
 function ExtractAssets() {
-  const folders = createFolder();
+  // const folders = createFolder();
   if (xml_folder?.length) {
     const allAssetJSON = {};
     xml_folder?.forEach((item) => {
@@ -287,10 +287,23 @@ function ExtractAssets() {
               publish_details: [],
               assetPath
             }
-            const parentUid = folders?.find((item) => item?.name === folderName)
-            if (parentUid) {
-              allAssetJSON[mestaData?.uid].parent_uid = parentUid?.uid
-            }
+            // const parentUid = folders?.find((item) => item?.name === folderName)
+            // if (parentUid) {
+            // sitecore 9 folder create 
+            //folders.json file and add this
+            // [
+            //   {
+            //     "urlPath": "/assets/2146b0cee522cc3a38d",
+            //     "uid": "2146b0cee522cc3a38d",
+            //     "content_type": "application/vnd.contenstack.folder",
+            //     "tags": [],
+            //     "name": "Sitecore 9",
+            //     "is_dir": true,
+            //     "parent_uid": null
+            //   }
+            // ]
+            allAssetJSON[mestaData?.uid].parent_uid = "2146b0cee522cc3a38d"
+            // }
           }
         }
       }

@@ -98,6 +98,15 @@ function content_typeField(schema, path = "") {
         path !== ""
           ? `${path}.${schema?.[schemaPos]?.uid}`
           : `${schema?.[schemaPos]?.uid}`;
+      if (schema?.[schemaPos]?.data_type === "reference") {
+        newPath = `${newPath}-reference`;
+      }
+      if (schema?.[schemaPos]?.data_type === "number") {
+        newPath = `${newPath}-number`;
+      }
+      if (schema?.[schemaPos]?.display_type === "dropdown") {
+        newPath = `${newPath}-dropdown_${JSON.stringify(schema?.[schemaPos]?.enum)}`;
+      }
       pathsUid?.push(newPath);
     }
   }
@@ -108,22 +117,28 @@ function startsWithNumber(str) {
   return /^\d/.test(str);
 }
 
-const uidCorrector = ({ uid }) => {
-  if (startsWithNumber(uid)) {
-    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
-  }
-  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
-}
 
 
 const writeEntry = ({ data, contentType, locale }) => {
   helper.writeFile(
     path.join(
       process.cwd(),
-      `sitecoreMigrationData/entries/${contentType}`,
-      locale
+      `sitecoreMigrationData/entries/${contentType}/${locale}`
     ),
     JSON.stringify(data, null, 4),
+    "en-us",
+    (err) => {
+      if (err) throw err;
+    }
+  );
+  const indexObj = { "1": `${locale}.json` }
+  helper.writeFile(
+    path.join(
+      process.cwd(),
+      `sitecoreMigrationData/entries/${contentType}/${locale}`
+    ),
+    JSON.stringify(indexObj, null, 4),
+    "index",
     (err) => {
       if (err) throw err;
     }
@@ -139,7 +154,7 @@ const handleFile = ({ locale, contentType, entry, uid }) => {
   if (fs.existsSync(`sitecoreMigrationData/entries/${contentType}`)) {
     const prevEntries = helper?.readFile(path.join(
       process.cwd(),
-      `sitecoreMigrationData/entries/${contentType}`,
+      `sitecoreMigrationData/entries/${contentType}/${locale}`,
       `${locale}.json`
     ))
     if (prevEntries) {
@@ -269,7 +284,7 @@ const idCorrector = ({ id }) => {
   if (newId) {
     return newId?.toLowerCase()
   } else {
-    return id?.toLowerCase()
+    return id
   }
 }
 
@@ -282,6 +297,14 @@ function isJsonString(str) {
     return false;
   }
 }
+
+const uidCorrector = ({ uid }) => {
+  if (startsWithNumber(uid)) {
+    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
+  }
+  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
+}
+
 
 
 
@@ -299,100 +322,79 @@ const renderEntry = ({ data, contentType }) => {
   if (content_type?.uid) {
     content_type.schema = attachGlobalfiled({ schema: content_type?.schema })
     const keys = content_typeField(content_type?.schema)
-    const rteKeys = findJsonRte({ schema: content_type?.schema })
     const entry = {};
     data?.item?.fields?.field?.forEach?.((item) => {
       if (!item?.$?.key?.includes("__")) {
-        item.$.key = appendKey({ key: item?.$?.key, keys })
-        const isPresent = rteKeys?.find((et) => et === item?.$?.key);
-        if (containsHTML(item?.content)) {
-          const jsonValue = attachJsonRte({ content: item?.content });
-          const flattenHtml = flatten(jsonValue);
-          for (const [key, value] of Object.entries(flattenHtml)) {
-            if (value === "img") {
-              const newKey = key?.replace(".type", "")
-              const htmlData = _.get(jsonValue, newKey)
-              if (htmlData?.type === "img" && htmlData?.attrs) {
-                const urlRegex = /^(https?:\/\/)?([\da-z.-]+)\.([a-z.]{2,6})([\/\w.-]*)*\/?$/;
-                const uid = getAssetsUid({ url: htmlData?.attrs?.url });
-                if (!uid?.match(urlRegex)) {
-                  let asset = {};
-                  if (uid?.includes('/')) {
-                    for (const [key, value] of Object.entries(allAssetJSON)) {
-                      if (value?.assetPath === `${uid}/`) {
-                        asset = value;
-                      }
-                    }
-                  } else {
-                    const assetUid = idCorrector({ id: makeUid({ uid }) });
-                    asset = allAssetJSON?.[assetUid];
-                  }
-                  console.log("🚀 ~ file: entries.js:330 ~ renderEntry ~ asset:", asset)
-                  if (asset?.uid) {
-                    const updated = {
-                      "uid": htmlData?.uid,
-                      "type": "reference",
-                      "attrs": {
-                        "display-type": "display",
-                        "asset-uid": asset?.uid,
-                        "content-type-uid": "sys_assets",
-                        "asset-link": asset?.urlPath,
-                        "asset-name": asset?.title,
-                        "asset-type": asset?.content_type,
-                        "type": "asset",
-                        "class-name": "embedded-asset",
-                        "inline": false
-                      },
-                      "children": [
-                        {
-                          "text": ""
-                        }
-                      ]
-                    }
-                    _.set(jsonValue, newKey, updated)
-                  }
-                }
+        const csData = keys?.find((elt) => elt === `${item?.$?.key}-reference`)
+        if (csData) {
+          item.$.key = appendKey({ key: item?.$?.key, keys });
+          const refsFound = item?.content?.split("|");
+          const contentData = [];
+          refsFound?.forEach((ref) => {
+            xml_folder?.forEach((pt) => {
+              if (pt?.includes?.(ref) && pt?.includes(".json")) {
+                const entry = helper?.readFile(`${global.config.sitecore_folder}/${pt}`)
+                contentData?.push({
+                  _content_type_uid: uidCorrector({ uid: entry?.item?.$?.template }),
+                  uid: idCorrector?.({ id: entry?.item?.$?.id })
+                })
               }
-            }
-          }
-          entry[item?.$?.key] = jsonValue;
-        } else if (isNaN(item?.content * 1) && isJsonString(item?.content)) {
-          const isKey = rteKeys?.find((pth) => pth?.uid === item?.$?.key)
-          if (isKey?.uid) {
-            entry[item?.$?.key] = attachJsonRte({ content: item?.content })
-          }
-        } else {
-          const isKey = rteKeys?.find((pth) => pth?.uid === item?.$?.key)
-          if (isKey?.uid) {
-            entry[item?.$?.key] = attachJsonRte({ content: item?.content })
-          } else if (item?.content !== "") {
-            entry[item?.$?.key] = idCorrector({
-              id: item?.content
             })
+          })
+          entry[item?.$?.key] = contentData;
+        } else {
+          item.$.key = appendKey({ key: item?.$?.key, keys })
+          const isNumber = keys?.find((elt) => elt === `${item?.$?.key}-number`)
+          const isDropDown = keys?.find((elt) => elt.includes(`${item?.$?.key}-dropdown_`))
+          if (isDropDown?.includes(_) && isDropDown?.split("_")?.length === 2) {
+            const choices = isDropDown?.split("_")?.[1];
+            if (typeof choices === "string") {
+              try {
+                const choicesParsed = JSON?.parse(choices)
+                if (!choicesParsed?.advanced) {
+                  if (choicesParsed?.choices?.[0]?.value === "NF") {
+                    entry[item?.$?.key] = null;
+                  } else {
+                    entry[item?.$?.key] = item?.content;
+                  }
+                } else {
+                  entry[item?.$?.key] = item?.content;
+                }
+              } catch (err) {
+                console.log("🚀 ~ renderEntry ~ err:", err)
+              }
+            } else {
+              console.log("Not string value.")
+            }
+          } else if (isNumber) {
+            entry[item?.$?.key] = _.toNumber(item?.content)
+          } else {
+            if (item.$.key !== "" && item?.content?.trim() !== "") {
+              entry[item?.$?.key] = idCorrector({
+                id: item?.content
+              })
+            }
           }
         }
       }
     })
-    if (rteKeys?.length) {
-      rteKeys?.forEach((item) => {
-        const data = _.get(entry, item?.uid)
-        if (data === "" || data === "\n") {
-          entry[item?.uid] = attachJsonRte({ content: item?.default_value ?? "" })
-        }
-      })
+    if (keys?.find?.((item) => item?.includes("."))) {
+      return unflatten(entry);
     }
-    return unflatten(entry);
+    return entry;
   }
 }
-
-
 
 function ExtractEntries() {
   const obj = {};
   const tempData = {};
   for (let i = 0; i < xml_folder?.length; i++) {
     const folder = xml_folder?.[i];
-    if ((folder?.includes("data.json") || folder?.includes("data.json.json")) && !folder?.includes("Common/Configuration/")) {
+    if (
+      (folder?.includes("data.json") || folder?.includes("data.json.json"))
+      && folder?.includes("/content")
+      && !folder?.includes("Common/Configuration/")
+    ) {
       const key = "/content";
       const url = folder?.split?.(key)?.[1]?.split?.("/{")?.[0];
       const data = helper?.readFile(`${global.config.sitecore_folder}/${folder}`)
@@ -417,24 +419,25 @@ function ExtractEntries() {
         }
       }
       if (data) {
+        // if (uidCorrector({ uid: data?.item?.$?.template }) === "footer") {
+        // console.log(data)
         const entry = renderEntry({ data, contentType: uidCorrector({ uid: data?.item?.$?.template }) })
-        // data?.item?.$?.language
+        // console.log("=>>>>>>", entry === undefined ? uidCorrector({ uid: data?.item?.$?.template }) : "")
         if (entry) {
           entry.url = url;
-          entry.title = url;
+          entry.title = data?.item?.$?.name;
           entry.uid = idCorrector({ id: data?.item?.$?.id });
           handleFile({ locale: "en-us", contentType: uidCorrector({ uid: data?.item?.$?.template }), entry, uid: entry?.uid })
         }
+        // }
       }
     }
   }
-
   const TemplatesJson = helper?.readFile(path.join(
     process.cwd(),
     `sitecoreMigrationData/MapperData`,
     "template.json"
   ))
-
   for (const [key, value] of Object?.entries(obj)) {
     const refs = [];
     let entryData = {};
@@ -471,7 +474,7 @@ function ExtractEntries() {
         filtredData?.forEach((dat) => {
           const entry = helper?.readFile(path.join(
             process.cwd(),
-            `sitecoreMigrationData/entries/${dat?._content_type_uid}`,
+            `sitecoreMigrationData/entries/${dat?._content_type_uid}/en-us`,
             `en-us.json`
           ))
           if (entry?.[dat?.uid]) {
@@ -491,6 +494,54 @@ function ExtractEntries() {
       }
     }
   }
+  const schema = [];
+  const contentTypeSchema = read(
+    path.join(
+      process.cwd(),
+      `sitecoreMigrationData/content_types`
+    )
+  )
+  contentTypeSchema?.forEach((ct) => {
+    let ctData = helper?.readFile(path.join(
+      process.cwd(),
+      `sitecoreMigrationData/content_types`,
+      ct
+    ))
+    ctData.schema = ctData?.schema?.map?.((itl, index) => {
+      const isPresent = ctData?.schema?.filter((sch) => sch?.uid === itl?.uid)
+      if (isPresent?.length > 1) {
+        return {
+          ...itl,
+          display_name: `${itl.display_name} ${index}`,
+          uid: `${itl.uid}_${index}`
+        }
+      }
+      return itl;
+    })
+    helper.writeFile(
+      path.join(
+        process.cwd(),
+        "sitecoreMigrationData/content_types",
+      ),
+      JSON.stringify(ctData, null, 4),
+      ct?.replace(".json", ""),
+      (err) => {
+        if (err) throw err;
+      }
+    )
+    schema?.push(ctData);
+  })
+  helper.writeFile(
+    path.join(
+      process.cwd(),
+      "sitecoreMigrationData/content_types",
+    ),
+    JSON.stringify(schema, null, 4),
+    "schema",
+    (err) => {
+      if (err) throw err;
+    }
+  )
 }
 
 ExtractEntries.prototype = {

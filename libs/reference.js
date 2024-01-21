@@ -196,7 +196,7 @@ function ExtractRef() {
 
 ExtractRef.prototype = {
   start: function () {
-    successLogger(`exporting content-types`);
+    successLogger(`Attached Reference.`);
   },
 };
 

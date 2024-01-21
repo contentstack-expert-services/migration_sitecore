@@ -286,7 +286,7 @@ function ExtractTemplate() {
 
 ExtractTemplate.prototype = {
   start: function () {
-    successLogger(`exporting Template`);
+    successLogger(`creating Templates`);
   },
 };
 

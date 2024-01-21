@@ -17,10 +17,10 @@ global.warnLogger = require("./utils/logger")("warn").log;
 var modulesList = [
   // "convert",
   // "configuration",
+  // "assets",
   "contenttypes",
   "reference",
   "template",
-  // "assets",
   "entries",
   // "staticHtml"
 ]; //to create entries

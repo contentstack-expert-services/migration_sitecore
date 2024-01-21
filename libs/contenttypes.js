@@ -19,6 +19,10 @@ if (!fs.existsSync(contentFolderPath)) {
   helper.writeFile(path.join(contentFolderPath, contentConfig.fileName));
 }
 
+function isKeyPresent(keyToFind, timeZones) {
+  return timeZones?.some?.(timeZone => Object?.keys?.(timeZone)?.includes?.(keyToFind));
+}
+
 const createTemplate = ({ components }) => {
   components.item.$.field = components?.item?.fields?.field
   return components?.item?.$
@@ -29,10 +33,13 @@ function startsWithNumber(str) {
 }
 
 const uidCorrector = ({ uid }) => {
+  // if (uid === "Geo Targeted Airports - Use if you want to override default user geo location") {
+  // console.log(uid)
   if (startsWithNumber(uid)) {
-    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`
+    return `${append}_${_.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()}`?.replace?.("$", "");
   }
-  return _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
+  const newUid = _.replace(uid, new RegExp("[ -]", "g"), '_')?.toLowerCase()
+  return newUid?.replace?.("$", "")
 }
 
 
@@ -104,7 +111,7 @@ const contentTypeKeyMapper = ({ template, contentType, contentTypeKey = "content
   );
 }
 
-const ContentTypeSchema = ({ type, name, uid, default_value = "", description = "", id, choices = [{ value: "NF" }], advanced }) => {
+const ContentTypeSchema = ({ type, name, uid, default_value = "", description = "", id, choices = [{ value: "NF" }], advanced, sourLet }) => {
   const isPresent = restrictedUid?.find((item) => item === uid);
   if (isPresent) {
     uid = `${uid}_changed`
@@ -146,21 +153,38 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
       }
     }
     case 'Rich Text': {
+      // return {
+      //   "data_type": "json",
+      //   "display_name": name,
+      //   "uid": uid,
+      //   "field_metadata": {
+      //     "allow_json_rte": true,
+      //     "rich_text_type": "advanced",
+      //     description,
+      //     default_value
+      //   },
+      //   "reference_to": [],
+      //   "non_localizable": false,
+      //   "multiple": false,
+      //   "mandatory": false,
+      //   "unique": false
+      // }
       return {
-        "data_type": "json",
         "display_name": name,
-        "uid": uid,
+        "extension_uid": "blta7be8bced92ddabe",
         "field_metadata": {
-          "allow_json_rte": true,
-          "rich_text_type": "advanced",
-          description,
-          default_value
+          "extension": true,
+          "version": 3
         },
-        "reference_to": [],
-        "non_localizable": false,
-        "multiple": false,
+        uid,
         "mandatory": false,
-        "unique": false
+        "non_localizable": false,
+        "unique": false,
+        "config": {},
+        "data_type": "text",
+        "multiple": false,
+        "indexed": false,
+        "inbuilt_model": false
       }
     }
 
@@ -173,7 +197,7 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
         "display_type": "dropdown",
         "enum": {
           "advanced": advanced,
-          choices
+          choices: choices?.length ? choices : [{ value: "NF" }]
         },
         "multiple": false,
         uid,
@@ -335,7 +359,44 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
         };
       }
     }
+    case "Treelist": {
+      if (sourLet?.key !== "source") {
+        return {
+          data_type: "reference",
+          display_name: name,
+          reference_to: [
+            "tier_1_footer_link",
+            "tier_2_footer_link",
+            "tier_3_footer_link",
+            "tier_1_header_link",
+            "tier_2_header_link",
+            "tier_3_header_link"
+          ],
+          field_metadata: {
+            ref_multiple: true,
+            ref_multiple_content_types: true
+          },
+          uid: uid,
+          mandatory: false,
+          multiple: false,
+          non_localizable: false,
+          unique: false
+        };
+      }
+
+    }
     default: {
+      return {
+        "display_name": sourLet?.key === "source" ? `${name}_1` : name,
+        "uid": sourLet?.key === "source" ? `${uid}_1` : uid,
+        "data_type": "text",
+        "mandatory": true,
+        "unique": true,
+        "field_metadata": {
+          "_default": true
+        },
+        "multiple": false
+      }
       console.log(name, "=>>", type)
     }
   }
@@ -359,7 +420,15 @@ function makeUnique({ data }) {
         value: value
       };
     });
-    return result;
+    const newValue = [];
+    result?.forEach((item) => {
+      if (item?.key === undefined) {
+        newValue?.push({ ...item, key: item?.value })
+      } else {
+        newValue?.push(item)
+      }
+    })
+    return newValue;
   } else {
     let uniqueValues = [];
     const result = data?.filter(item => {
@@ -370,7 +439,15 @@ function makeUnique({ data }) {
         return true;
       }
     });
-    return result;
+    const newValue = [];
+    result?.forEach((item) => {
+      if (item?.key === undefined) {
+        newValue?.push({ ...item, key: item?.value })
+      } else {
+        newValue?.push(item)
+      }
+    })
+    return newValue;
   }
 }
 
@@ -382,7 +459,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
   const sourceTree = helper.readFile(
     path.join(process.cwd(), "/sitecoreMigrationData/MapperData/configurationTree.json")
   );
-  const schema = [];
+  let schema = [];
   let isTitle = false;
   let isUrl = false;
   components?.forEach((item) => {
@@ -398,6 +475,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
           })
         }
         let compType = {};
+        let sourLet = {};
         let sourceType = [];
         let advanced = false;
         let name = field?.name;
@@ -412,12 +490,13 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
             compType = item;
           }
           if (item?.key === "source") {
+            sourLet = item;
             if (compType?.content === "Droplink") {
               if (sourceTree) {
                 if (item?.content?.includes(configChecker)) {
                   sourceType = makeUnique({ data: sourceTree?.[item?.content] })
                   compType.content = "Droplist"
-                  if (sourceType?.[0]?.key !== undefined) {
+                  if (isKeyPresent("key", sourceType)) {
                     advanced = true;
                   }
                 } else {
@@ -453,7 +532,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
                   }
                 } else {
                   sourceType = makeUnique({ data: source?.[item?.content] })
-                  if (sourceType?.[0]?.key !== undefined) {
+                  if (isKeyPresent("key", sourceType)) {
                     advanced = true;
                   }
                 }
@@ -466,7 +545,7 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
             }
           }
         })
-        if (compType?.content !== "Treelist" && compType?.content !== "Droptree") {
+        if (compType?.content !== "Droptree") {
           schema.push(ContentTypeSchema({
             name,
             uid: uidCorrector({ uid: field?.key }),
@@ -475,13 +554,31 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
             id: field?.id,
             choices: sourceType?.slice(0, 98),
             advanced,
+            sourLet
           }));
         }
       }
     }
+    const isUrlfound = schema?.find((rt) => rt?.uid?.toLowerCase?.() === "url")
+    if (isUrlfound === undefined) {
+      schema.unshift({
+        "display_name": "Url",
+        "uid": "url",
+        "data_type": "text",
+        "mandatory": true,
+        "unique": true,
+        "field_metadata": {
+          "_default": true
+        },
+        "multiple": false
+      })
+    }
     const isPresent = schema?.find((item) =>
-      item?.data_type === "text" && item?.uid === "title"
+      item?.data_type === "text" && item?.uid?.toLowerCase?.() === "title"
     )
+    if (content_type?.uid === "promocontent") {
+      // console.log("🚀 ~ components?.forEach ~ content_type:", schema?.map((item) => item?.uid), content_type, isPresent)
+    }
     if (isPresent === undefined) {
       schema.unshift({
         "display_name": "Title",
@@ -495,6 +592,17 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
         "multiple": false
       })
     }
+  })
+  schema = schema?.map?.((itl, index) => {
+    const isPresent = schema?.filter((sch) => sch?.uid === itl?.uid)
+    if (isPresent?.length > 1) {
+      return {
+        ...itl,
+        display_name: `${itl.display_name} ${index}`,
+        uid: `${itl.uid}_${index}`
+      }
+    }
+    return itl;
   })
   return schema;
 }
@@ -543,18 +651,20 @@ function singleContentTypeCreate({ templatePaths }) {
   template.components = templatesComponents({ path: templatesComponentsPath, basePath: templatePaths });
   template.standardValues = templateStandardValues({ components: templatesStandaedValuePath })
   const contentType = contentTypeMaker({ template, basePath: templatePaths })
-  helper.writeFile(
-    path.join(
-      process.cwd(),
-      "sitecoreMigrationData/content_types",
-    ),
-    JSON.stringify(contentType, null, 4),
-    contentType?.uid,
-    (err) => {
-      if (err) throw err;
-    }
-  );
-  contentTypeKeyMapper({ template, contentType })
+  if (contentType?.schema?.length) {
+    helper.writeFile(
+      path.join(
+        process.cwd(),
+        "sitecoreMigrationData/content_types",
+      ),
+      JSON.stringify(contentType, null, 4),
+      contentType?.uid,
+      (err) => {
+        if (err) throw err;
+      }
+    );
+    contentTypeKeyMapper({ template, contentType })
+  }
   return true;
 }
 
@@ -589,7 +699,7 @@ function ExtractContentTypes() {
 
 ExtractContentTypes.prototype = {
   start: function () {
-    successLogger(`exporting content - types`);
+    successLogger(`exporting ContentType`);
   },
 };
 
