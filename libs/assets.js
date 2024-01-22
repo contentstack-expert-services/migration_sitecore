@@ -257,11 +257,11 @@ function ExtractAssets() {
               if (isIdPresent) {
                 try {
                   const assets = fs.readFileSync(`${newPath}/${isIdPresent}`);
-                  fs.mkdirSync(`${assetsSave}/${mestaData?.uid}`, { recursive: true });
+                  fs.mkdirSync(`${assetsSave}/files/${mestaData?.uid}`, { recursive: true });
                   fs.writeFileSync(
                     path.join(
                       process.cwd(),
-                      `${assetsSave}/${mestaData?.uid}`,
+                      `${assetsSave}/files/${mestaData?.uid}`,
                       `${assetMeta?.item?.$?.name}.${mestaData?.extension}`
                     )
                     , assets)
@@ -289,32 +289,54 @@ function ExtractAssets() {
             }
             // const parentUid = folders?.find((item) => item?.name === folderName)
             // if (parentUid) {
-            // sitecore 9 folder create 
-            //folders.json file and add this
-            // [
-            //   {
-            //     "urlPath": "/assets/2146b0cee522cc3a38d",
-            //     "uid": "2146b0cee522cc3a38d",
-            //     "content_type": "application/vnd.contenstack.folder",
-            //     "tags": [],
-            //     "name": "Sitecore 9",
-            //     "is_dir": true,
-            //     "parent_uid": null
-            //   }
-            // ]
+            // sitecore 9 folder create  uid
             allAssetJSON[mestaData?.uid].parent_uid = "2146b0cee522cc3a38d"
             // }
           }
         }
       }
     })
+    const fileMeta = { "1": "index.json" }
+    const assetsFolder = [
+      {
+        "urlPath": "/assets/2146b0cee522cc3a38d",
+        "uid": "2146b0cee522cc3a38d",
+        "content_type": "application/vnd.contenstack.folder",
+        "tags": [],
+        "name": "Sitecore 9",
+        "is_dir": true,
+        "parent_uid": null
+      }
+    ];
+    helper.writeFile(
+      path.join(
+        process.cwd(),
+        "sitecoreMigrationData/assets"
+      ),
+      JSON.stringify(fileMeta, null, 4),
+      "assets",
+      (err) => {
+        if (err) throw err;
+      }
+    );
     helper.writeFile(
       path.join(
         process.cwd(),
         "sitecoreMigrationData/assets"
       ),
       JSON.stringify(allAssetJSON, null, 4),
-      "assets",
+      "index",
+      (err) => {
+        if (err) throw err;
+      }
+    );
+    helper.writeFile(
+      path.join(
+        process.cwd(),
+        "sitecoreMigrationData/assets"
+      ),
+      JSON.stringify(assetsFolder, null, 4),
+      "folders",
       (err) => {
         if (err) throw err;
       }

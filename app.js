@@ -17,7 +17,7 @@ global.warnLogger = require("./utils/logger")("warn").log;
 var modulesList = [
   // "convert",
   // "configuration",
-  // "assets",
+  "assets",
   "contenttypes",
   "reference",
   "template",

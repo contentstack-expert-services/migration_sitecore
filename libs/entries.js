@@ -11,6 +11,7 @@ const entriesConfig = config.modules.entries;
 const entriesFolderPath = path.resolve(config.data, config.entryfolder) || {};
 const { JSDOM } = require("jsdom");
 const { htmlToJson, jsonToHtml } = require("@contentstack/json-rte-serializer");
+const dateConverter = require("../utils/dateChanger");
 
 if (!fs.existsSync(entriesFolderPath)) {
   mkdirp.sync(entriesFolderPath);
@@ -106,6 +107,15 @@ function content_typeField(schema, path = "") {
       }
       if (schema?.[schemaPos]?.display_type === "dropdown") {
         newPath = `${newPath}-dropdown_${JSON.stringify(schema?.[schemaPos]?.enum)}`;
+      }
+      if (schema?.[schemaPos]?.data_type === "boolean") {
+        newPath = `${newPath}-boolean`;
+      }
+      if (schema?.[schemaPos]?.data_type === "file") {
+        newPath = `${newPath}-file`;
+      }
+      if (schema?.[schemaPos]?.data_type === "isodate") {
+        newPath = `${newPath}-isodate`;
       }
       pathsUid?.push(newPath);
     }
@@ -212,6 +222,15 @@ const getAssetsUid = ({ url }) => {
       return url?.match?.(/\/media\/(.*)/)?.[1];
     }
   } else {
+    if (url?.includes?.("mediaid")) {
+      const match = url?.match(/mediaid="([^"]+)"/);
+      if (match?.[1]) {
+        const mediaId = match?.[1];
+        return mediaId;
+      } else {
+        return null;
+      }
+    }
     return url;
   }
 }
@@ -312,7 +331,7 @@ const renderEntry = ({ data, contentType }) => {
   const allAssetJSON = helper?.readFile(path.join(
     process.cwd(),
     `sitecoreMigrationData/assets`,
-    "assets.json"
+    "index.json"
   ))
   const content_type = helper?.readFile(path.join(
     process.cwd(),
@@ -344,8 +363,11 @@ const renderEntry = ({ data, contentType }) => {
           entry[item?.$?.key] = contentData;
         } else {
           item.$.key = appendKey({ key: item?.$?.key, keys })
-          const isNumber = keys?.find((elt) => elt === `${item?.$?.key}-number`)
-          const isDropDown = keys?.find((elt) => elt.includes(`${item?.$?.key}-dropdown_`))
+          const isNumber = keys?.find((elt) => elt === `${item?.$?.key}-number`);
+          const isDropDown = keys?.find((elt) => elt.includes(`${item?.$?.key}-dropdown_`));
+          const isBoolean = keys?.find((elt) => elt === `${item?.$?.key}-boolean`);
+          const isFile = keys?.find((elt) => elt === `${item?.$?.key}-file`);
+          const isIsoDate = keys?.find((elt) => elt === `${item?.$?.key}-isodate`);
           if (isDropDown?.includes(_) && isDropDown?.split("_")?.length === 2) {
             const choices = isDropDown?.split("_")?.[1];
             if (typeof choices === "string") {
@@ -366,8 +388,24 @@ const renderEntry = ({ data, contentType }) => {
             } else {
               console.log("Not string value.")
             }
+          } else if (isBoolean) {
+            entry[item?.$?.key] = item?.content === "1" ? true : false;
           } else if (isNumber) {
-            entry[item?.$?.key] = _.toNumber(item?.content)
+            entry[item?.$?.key] = _.toNumber(item?.content);
+          } else if (isIsoDate) {
+            entry[item?.$?.key] = dateConverter({ inputDate: item?.content });
+          } else if (isFile) {
+            const assetsUid = getAssetsUid({ url: item?.content });
+            if (assetsUid) {
+              const assetsIdCorrected = idCorrector({ id: assetsUid });
+              if (allAssetJSON?.[assetsIdCorrected]) {
+                entry[item?.$?.key] = allAssetJSON?.[assetsIdCorrected];
+              } else {
+                entry[item?.$?.key] = null;
+              }
+            } else {
+              entry[item?.$?.key] = null;
+            }
           } else {
             if (item.$.key !== "" && item?.content?.trim() !== "") {
               entry[item?.$?.key] = idCorrector({
