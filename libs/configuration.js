@@ -44,21 +44,15 @@ function ExtractConfiguration() {
         groupPath?.forEach((item) => {
           if ((item?.includes("data.json") || item?.includes("data.json.json")) && !item?.includes("undefined.json")) {
             const conf = helper?.readFile(`${global.config.sitecore_folder}/${newPath}/${item}`)
-            if (conf?.item?.$?.template === "configuration") {
-              const value = conf?.item?.fields?.field?.find((item) => item?.$?.key === "value")
-              if (value) {
-                arrayValue.push({ key: conf?.item?.$?.name, value: value?.content !== "" ? value?.content : conf?.item?.$?.name })
-              } else {
-                arrayValue.push({ value: conf?.item?.$?.name })
-              }
-              multiValueArrayTree.push({ key: conf?.item?.$?.name, value: conf?.item?.$?.id })
+            const value = conf?.item?.fields?.field?.find((item) => item?.$?.key === "value")
+            if (value) {
+              arrayValue.push({ key: conf?.item?.$?.name, value: value?.content !== "" ? value?.content : conf?.item?.$?.name })
+            } else {
+              arrayValue.push({ value: conf?.item?.$?.name })
             }
+            multiValueArrayTree.push({ key: conf?.item?.$?.name, value: conf?.item?.$?.id })
           }
         })
-        if (arrayValue?.length) {
-        }
-        if (multiValueArrayTree?.length) {
-        }
         obj[assignFolderName({ path: `${global.config.sitecore_folder}/${newPath}` })] = arrayValue;
         treeObj[assignFolderName({ path: `${global.config.sitecore_folder}/${newPath}` })] = multiValueArrayTree;
       }

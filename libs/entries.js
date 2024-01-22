@@ -18,6 +18,10 @@ if (!fs.existsSync(entriesFolderPath)) {
   helper.writeFile(path.join(entriesFolderPath, entriesConfig.fileName));
 }
 
+function isKeyPresent(keyToFind, timeZones) {
+  return timeZones?.some?.(timeZone => Object?.keys?.(timeZone)?.includes?.(keyToFind));
+}
+
 function unflatten(table) {
   var result = {};
 
@@ -373,14 +377,15 @@ const renderEntry = ({ data, contentType }) => {
             if (typeof choices === "string") {
               try {
                 const choicesParsed = JSON?.parse(choices)
-                if (!choicesParsed?.advanced) {
-                  if (choicesParsed?.choices?.[0]?.value === "NF") {
-                    entry[item?.$?.key] = null;
-                  } else {
-                    entry[item?.$?.key] = item?.content;
-                  }
+                if (choicesParsed?.choices?.[0]?.value === "NF") {
+                  entry[item?.$?.key] = null;
                 } else {
-                  entry[item?.$?.key] = item?.content;
+                  const keyPresent = choicesParsed?.choices?.find((elt) => elt?.value === item?.content);
+                  if (isKeyPresent) {
+                    entry[item?.$?.key] = item?.content;
+                  } else {
+                    entry[item?.$?.key] = null;
+                  }
                 }
               } catch (err) {
                 console.log("🚀 ~ renderEntry ~ err:", err)
@@ -457,7 +462,7 @@ function ExtractEntries() {
         }
       }
       if (data) {
-        // if (uidCorrector({ uid: data?.item?.$?.template }) === "footer") {
+        // if (uidCorrector({ uid: data?.item?.$?.template }) === "header_advisories") {
         // console.log(data)
         const entry = renderEntry({ data, contentType: uidCorrector({ uid: data?.item?.$?.template }) })
         // console.log("=>>>>>>", entry === undefined ? uidCorrector({ uid: data?.item?.$?.template }) : "")

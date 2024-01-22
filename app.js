@@ -20,7 +20,7 @@ var modulesList = [
   "assets",
   "contenttypes",
   "reference",
-  "template",
+  // "template",
   "entries",
   // "staticHtml"
 ]; //to create entries
@@ -114,7 +114,7 @@ module.exports = XMLMigration = async () => {
     try {
       global.config.sitecore_folder =
         // "/Users/umesh.more/Downloads/history-only/items"
-        // "/Users/umesh.more/Downloads/package 71/items/master/sitecore/content/Common/Configuration"
+        // "/Users/umesh.more/Downloads/package 75/items/master/sitecore/content/Common/Configuration"
         "/Users/umesh.more/Downloads/package 75/items"
       // "/Users/umesh.more/Downloads/package 77/items"
       // "/Users/umesh.more/Downloads/package 45/items/master/sitecore/content"
