@@ -153,39 +153,39 @@ const ContentTypeSchema = ({ type, name, uid, default_value = "", description = 
       }
     }
     case 'Rich Text': {
-      // return {
-      //   "data_type": "json",
-      //   "display_name": name,
-      //   "uid": uid,
-      //   "field_metadata": {
-      //     "allow_json_rte": true,
-      //     "rich_text_type": "advanced",
-      //     description,
-      //     default_value
-      //   },
-      //   "reference_to": [],
-      //   "non_localizable": false,
-      //   "multiple": false,
-      //   "mandatory": false,
-      //   "unique": false
-      // }
       return {
+        "data_type": "json",
         "display_name": name,
-        "extension_uid": "blta7be8bced92ddabe",
+        "uid": uid,
         "field_metadata": {
-          "extension": true,
-          "version": 3
+          "allow_json_rte": true,
+          "rich_text_type": "advanced",
+          description,
+          default_value
         },
-        uid,
-        "mandatory": false,
+        "reference_to": [],
         "non_localizable": false,
-        "unique": false,
-        "config": {},
-        "data_type": "text",
         "multiple": false,
-        "indexed": false,
-        "inbuilt_model": false
+        "mandatory": false,
+        "unique": false
       }
+      // return {
+      //   "display_name": name,
+      //   "extension_uid": "blta7be8bced92ddabe",
+      //   "field_metadata": {
+      //     "extension": true,
+      //     "version": 3
+      //   },
+      //   uid,
+      //   "mandatory": false,
+      //   "non_localizable": false,
+      //   "unique": false,
+      //   "config": {},
+      //   "data_type": "text",
+      //   "multiple": false,
+      //   "indexed": false,
+      //   "inbuilt_model": false
+      // }
     }
 
     // case "":
@@ -576,9 +576,6 @@ const contentTypeMapper = ({ components, standardValues, content_type }) => {
     const isPresent = schema?.find((item) =>
       item?.data_type === "text" && item?.uid?.toLowerCase?.() === "title"
     )
-    if (content_type?.uid === "promocontent") {
-      // console.log("🚀 ~ components?.forEach ~ content_type:", schema?.map((item) => item?.uid), content_type, isPresent)
-    }
     if (isPresent === undefined) {
       schema.unshift({
         "display_name": "Title",

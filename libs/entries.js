@@ -121,6 +121,11 @@ function content_typeField(schema, path = "") {
       if (schema?.[schemaPos]?.data_type === "isodate") {
         newPath = `${newPath}-isodate`;
       }
+      if (schema?.[schemaPos]?.data_type === "json") {
+        if (schema?.[schemaPos]?.field_metadata?.allow_json_rte) {
+          newPath = `${newPath}-json`;
+        }
+      }
       pathsUid?.push(newPath);
     }
   }
@@ -372,6 +377,7 @@ const renderEntry = ({ data, contentType }) => {
           const isBoolean = keys?.find((elt) => elt === `${item?.$?.key}-boolean`);
           const isFile = keys?.find((elt) => elt === `${item?.$?.key}-file`);
           const isIsoDate = keys?.find((elt) => elt === `${item?.$?.key}-isodate`);
+          const IsJsonRTe = keys?.find((elt) => elt === `${item?.$?.key}-json`);
           if (isDropDown?.includes(_) && isDropDown?.split("_")?.length === 2) {
             const choices = isDropDown?.split("_")?.[1];
             if (typeof choices === "string") {
@@ -411,6 +417,8 @@ const renderEntry = ({ data, contentType }) => {
             } else {
               entry[item?.$?.key] = null;
             }
+          } else if (IsJsonRTe) {
+            entry[item?.$?.key] = attachJsonRte({ content: item?.content })
           } else {
             if (item.$.key !== "" && item?.content?.trim() !== "") {
               entry[item?.$?.key] = idCorrector({
